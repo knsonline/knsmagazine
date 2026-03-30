@@ -1,0 +1,35 @@
+import type { ContentType, Grade, Topic } from "@/types/content";
+
+export type AnalyticsEventType =
+  | "page_view"
+  | "content_view"
+  | "content_click"
+  | "cta_click"
+  | "banner_click"
+  | "grade_select"
+  | "collection_view";
+
+export interface AnalyticsEventPayload {
+  eventType: AnalyticsEventType;
+  pagePath: string;
+  contentId?: string;
+  ctaId?: string;
+  bannerId?: string;
+  collectionId?: string;
+  collectionName?: string;
+  grade?: Grade;
+  topic?: Topic;
+  contentType?: ContentType;
+  externalUrl?: string;
+  ctaLabel?: string;
+}
+
+export interface AnalyticsEventRecord extends AnalyticsEventPayload {
+  sessionId: string;
+  referrer: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  deviceType: "mobile" | "desktop";
+  timestamp: string;
+}

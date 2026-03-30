@@ -1,0 +1,190 @@
+{
+  "contents": [
+    {
+      "title": "중학교 내신 영어, 1학년 때 잡아야 하는 이유",
+      "summary": "중1 내신 영어의 중요성과 학년별 대비 전략을 정리했습니다.",
+      "external_url": "https://blog.example.com/middle-english-01",
+      "thumbnail_url": "/seed/thumb-01.jpg",
+      "grade": "중등",
+      "topic": "내신",
+      "content_type": "글",
+      "is_published": true,
+      "is_featured": true,
+      "is_hero": true
+    },
+    {
+      "title": "2025 수능 영어 절대평가, 1등급 전략 총정리",
+      "summary": "수능 영어 1등급을 위한 시기별 학습 로드맵입니다.",
+      "external_url": "https://youtube.com/watch?v=example01",
+      "thumbnail_url": "/seed/thumb-02.jpg",
+      "grade": "고등",
+      "topic": "수능",
+      "content_type": "영상",
+      "is_published": true,
+      "is_featured": true,
+      "is_hero": false
+    },
+    {
+      "title": "특목고 입시, 학부모가 꼭 알아야 할 5가지",
+      "summary": "외고·자사고·과학고 입시의 핵심 포인트를 짚어드립니다.",
+      "external_url": "https://blog.example.com/special-high-01",
+      "thumbnail_url": "/seed/thumb-03.jpg",
+      "grade": "중등",
+      "topic": "특목고",
+      "content_type": "글",
+      "is_published": true,
+      "is_featured": false,
+      "is_hero": false
+    },
+    {
+      "title": "초등 영어, 파닉스부터 리딩까지 단계별 가이드",
+      "summary": "초등학생 영어 학습의 올바른 순서와 방법을 안내합니다.",
+      "external_url": "https://youtube.com/watch?v=example02",
+      "thumbnail_url": "/seed/thumb-04.jpg",
+      "grade": "초등",
+      "topic": "학습법",
+      "content_type": "영상",
+      "is_published": true,
+      "is_featured": true,
+      "is_hero": false
+    },
+    {
+      "title": "예비 고1을 위한 여름방학 영어 학습 플랜",
+      "summary": "고등 영어를 미리 준비하는 구체적인 방학 계획안입니다.",
+      "external_url": "https://blog.example.com/pre-high-01",
+      "thumbnail_url": "/seed/thumb-05.jpg",
+      "grade": "예비고1",
+      "topic": "학습법",
+      "content_type": "글",
+      "is_published": true,
+      "is_featured": false,
+      "is_hero": false
+    },
+    {
+      "title": "내신 영어 서술형 평가, 이렇게 대비하세요",
+      "summary": "서술형 비중이 높아지는 내신 영어, 실전 대비법을 정리했습니다.",
+      "external_url": "https://blog.example.com/essay-type-01",
+      "thumbnail_url": "/seed/thumb-06.jpg",
+      "grade": "중등",
+      "topic": "내신",
+      "content_type": "글",
+      "is_published": true,
+      "is_featured": false,
+      "is_hero": false
+    },
+    {
+      "title": "고1 첫 중간고사 영어, 흔한 실수 TOP 7",
+      "summary": "고등학교 첫 시험에서 학생들이 자주 놓치는 포인트입니다.",
+      "external_url": "https://youtube.com/watch?v=example03",
+      "thumbnail_url": "/seed/thumb-07.jpg",
+      "grade": "고등",
+      "topic": "내신",
+      "content_type": "영상",
+      "is_published": true,
+      "is_featured": false,
+      "is_hero": false
+    },
+    {
+      "title": "영어 학원 선택 가이드: 우리 아이에게 맞는 곳 찾기",
+      "summary": "학원 유형별 특징과 자녀 성향에 맞는 선택 기준을 안내합니다.",
+      "external_url": "https://blog.example.com/academy-guide-01",
+      "thumbnail_url": "/seed/thumb-08.jpg",
+      "grade": "공통",
+      "topic": "입시정보",
+      "content_type": "글",
+      "is_published": true,
+      "is_featured": false,
+      "is_hero": false
+    },
+    {
+      "title": "수능 영어 듣기, 매일 10분 루틴의 힘",
+      "summary": "수능 영어 듣기 만점을 위한 일일 학습 루틴을 소개합니다.",
+      "external_url": "https://youtube.com/watch?v=example04",
+      "thumbnail_url": "/seed/thumb-09.jpg",
+      "grade": "고등",
+      "topic": "수능",
+      "content_type": "영상",
+      "is_published": true,
+      "is_featured": true,
+      "is_hero": false
+    },
+    {
+      "title": "초등 3학년, 영어 학습 시작 시기와 방법",
+      "summary": "초등 영어의 골든타임과 학부모가 해줄 수 있는 것들입니다.",
+      "external_url": "https://blog.example.com/elem-start-01",
+      "thumbnail_url": "/seed/thumb-10.jpg",
+      "grade": "초등",
+      "topic": "학습법",
+      "content_type": "글",
+      "is_published": true,
+      "is_featured": false,
+      "is_hero": false
+    },
+    {
+      "title": "중등 영어, 문법이 중요한 진짜 이유",
+      "summary": "중학교 영어 문법 학습의 의미와 효과적인 접근법입니다.",
+      "external_url": "https://blog.example.com/middle-grammar-01",
+      "thumbnail_url": "/seed/thumb-11.jpg",
+      "grade": "중등",
+      "topic": "학습법",
+      "content_type": "글",
+      "is_published": true,
+      "is_featured": false,
+      "is_hero": false
+    },
+    {
+      "title": "KNS 학부모 후기: 우리 아이가 영어를 좋아하게 된 계기",
+      "summary": "실제 학부모님의 이야기로 전하는 KNS 학습 경험담입니다.",
+      "external_url": "https://blog.example.com/review-01",
+      "thumbnail_url": "/seed/thumb-12.jpg",
+      "grade": "공통",
+      "topic": "기타",
+      "content_type": "글",
+      "is_published": true,
+      "is_featured": false,
+      "is_hero": false
+    }
+  ],
+  "ctas": [
+    {
+      "label": "무료 학습 상담 신청하기",
+      "url": "https://kns-consult.example.com"
+    },
+    {
+      "label": "가까운 설명회 일정 확인",
+      "url": "https://kns-seminar.example.com"
+    },
+    {
+      "label": "우리 아이 학습 진단 받기",
+      "url": "https://kns-diagnosis.example.com"
+    }
+  ],
+  "banners": [
+    {
+      "image_url": "/seed/banner-summer-seminar.jpg",
+      "link_url": "https://kns-seminar.example.com/summer-2025",
+      "starts_at": "2025-06-01",
+      "ends_at": "2025-07-31",
+      "is_active": true
+    }
+  ],
+  "collections": [
+    {
+      "name": "내신 대비 전략 모음",
+      "is_visible_home": true,
+      "content_titles": [
+        "중학교 내신 영어, 1학년 때 잡아야 하는 이유",
+        "내신 영어 서술형 평가, 이렇게 대비하세요",
+        "고1 첫 중간고사 영어, 흔한 실수 TOP 7"
+      ]
+    },
+    {
+      "name": "수능 영어 완전 정복",
+      "is_visible_home": true,
+      "content_titles": [
+        "2025 수능 영어 절대평가, 1등급 전략 총정리",
+        "수능 영어 듣기, 매일 10분 루틴의 힘"
+      ]
+    }
+  ]
+}
