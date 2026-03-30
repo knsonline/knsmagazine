@@ -228,9 +228,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const todayStart = startOfDay();
   const weekStart = startOfDaysAgo(6);
   const todayViews = events.filter(
-    (event) =>
-      ["page_view", "content_view"].includes(event.event_type) &&
-      new Date(event.created_at).getTime() >= todayStart.getTime(),
+    (event) => event.event_type === "content_view" && new Date(event.created_at).getTime() >= todayStart.getTime(),
   ).length;
   const weeklyCtaClicks = events.filter(
     (event) => event.event_type === "cta_click" && new Date(event.created_at).getTime() >= weekStart.getTime(),
@@ -271,7 +269,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       }
     }
 
-    if (["page_view", "content_view"].includes(event.event_type) && dailyViewsMap.has(dayKey)) {
+    if (event.event_type === "content_view" && dailyViewsMap.has(dayKey)) {
       dailyViewsMap.set(dayKey, (dailyViewsMap.get(dayKey) ?? 0) + 1);
     }
   });

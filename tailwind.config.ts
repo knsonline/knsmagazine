@@ -5,6 +5,7 @@ const config = {
   theme: {
     extend: {
       colors: {
+        white: "#FFFFFF",
         navy: "#1B2A4A",
         "navy-light": "#2A3F6A",
         ivory: "#FAF8F5",
