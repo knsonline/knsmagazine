@@ -28,6 +28,12 @@ function revalidateContentRoutes(id: string) {
   revalidatePath(`/contents/${getIdSlugPrefix(id)}`);
 }
 
+function revalidateAdminContentRoutes(id: string) {
+  revalidatePath("/admin/contents");
+  revalidatePath(`/admin/contents/${id}/edit`);
+  revalidatePath("/admin/contents/[id]/edit", "page");
+}
+
 function revalidateCollectionRoutes(id: string) {
   revalidatePath(`/collections/${getIdSlugPrefix(id)}`);
 }
@@ -84,7 +90,7 @@ export async function createContentAction(formData: FormData) {
   revalidateMagazine();
   revalidateContentRoutes(data.id);
   revalidatePath("/admin");
-  revalidatePath("/admin/contents");
+  revalidateAdminContentRoutes(data.id);
   redirect(`/admin/contents/${data.id}/edit`);
 }
 
@@ -108,6 +114,7 @@ export async function updateContentAction(id: string, formData: FormData) {
     is_featured: parseBoolean(formData.get("is_featured")),
     is_hero: parseBoolean(formData.get("is_hero")),
     cta_id: parseText(formData.get("cta_id")) || null,
+    updated_at: new Date().toISOString(),
   };
 
   if (payload.is_hero) {
@@ -123,7 +130,7 @@ export async function updateContentAction(id: string, formData: FormData) {
   revalidateMagazine();
   revalidateContentRoutes(id);
   revalidatePath("/admin");
-  revalidatePath("/admin/contents");
+  revalidateAdminContentRoutes(id);
   redirect(`/admin/contents/${id}/edit`);
 }
 
@@ -144,7 +151,7 @@ export async function deleteContentAction(id: string) {
   revalidateMagazine();
   revalidateContentRoutes(id);
   revalidatePath("/admin");
-  revalidatePath("/admin/contents");
+  revalidateAdminContentRoutes(id);
   redirect("/admin/contents");
 }
 
