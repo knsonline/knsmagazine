@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { GradeQuickLinks } from "@/components/sections/GradeQuickLinks";
+import { MagazineImage } from "@/components/ui/MagazineImage";
 import { SITE_COPY } from "@/constants/site";
 import type { ContentItem } from "@/types/content";
 
@@ -46,11 +46,12 @@ export function HeroSection({ hero }: HeroSectionProps) {
               className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-white/6 p-3"
             >
               <div className="relative aspect-[16/11] overflow-hidden rounded-[24px]">
-                <Image
+                <MagazineImage
                   src={hero.thumbnailUrl}
                   alt={hero.title}
-                  fill
                   className="object-cover transition duration-300 group-hover:scale-[1.02]"
+                  sizes="(max-width: 1024px) 100vw, 45vw"
+                  priority
                 />
               </div>
             </Link>

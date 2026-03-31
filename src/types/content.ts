@@ -17,6 +17,7 @@ export interface ContentItem {
   summary: string;
   externalUrl: string;
   thumbnailUrl: string;
+  thumbnailUrlRaw?: string | null;
   grade: Grade;
   topic: Topic;
   contentType: ContentType;
@@ -34,6 +35,7 @@ export interface BannerItem {
   id: string;
   title: string;
   imageUrl: string;
+  imageUrlRaw?: string | null;
   linkUrl: string;
   startsAt?: string | null;
   endsAt?: string | null;

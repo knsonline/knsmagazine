@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { requireAdminUser } from "@/lib/auth/admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { BANNER_BUCKET, extractBannerStoragePath } from "@/lib/storage/banners";
 import { PRIMARY_GRADES, TOPICS } from "@/constants/taxonomy";
+import { THUMBNAIL_BUCKET } from "@/lib/storage/thumbnails";
 import { getIdSlugPrefix } from "@/lib/utils/slug";
 
 function parseBoolean(value: FormDataEntryValue | null) {
@@ -14,6 +16,23 @@ function parseBoolean(value: FormDataEntryValue | null) {
 
 function parseText(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+async function removeStorageObjectIfExists(bucket: string, path: string | null) {
+  if (!path) {
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  await supabase.storage.from(bucket).remove([path]);
+}
+
+async function removeThumbnailIfExists(path: string | null) {
+  await removeStorageObjectIfExists(THUMBNAIL_BUCKET, path);
+}
+
+async function removeBannerIfExists(path: string | null) {
+  await removeStorageObjectIfExists(BANNER_BUCKET, path);
 }
 
 function revalidateMagazine() {
@@ -63,6 +82,7 @@ export async function createContentAction(formData: FormData) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const nextThumbnailPath = parseText(formData.get("thumbnail_storage_path")) || null;
   const payload = {
     title: parseText(formData.get("title")),
     summary: parseText(formData.get("summary")),
@@ -77,21 +97,34 @@ export async function createContentAction(formData: FormData) {
     cta_id: parseText(formData.get("cta_id")) || null,
   };
 
-  if (payload.is_hero) {
-    await supabase.from("contents").update({ is_hero: false }).eq("is_hero", true);
-  }
+  let createdContentId: string;
 
-  const { data, error } = await supabase.from("contents").insert(payload).select("id").single();
+  try {
+    if (payload.is_hero) {
+      const { error: heroError } = await supabase.from("contents").update({ is_hero: false }).eq("is_hero", true);
 
-  if (error) {
-    throw new Error(error.message);
+      if (heroError) {
+        throw new Error(heroError.message);
+      }
+    }
+
+    const { data, error } = await supabase.from("contents").insert(payload).select("id").single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    createdContentId = data.id;
+  } catch (error) {
+    await removeThumbnailIfExists(nextThumbnailPath);
+    throw error;
   }
 
   revalidateMagazine();
-  revalidateContentRoutes(data.id);
+  revalidateContentRoutes(createdContentId);
   revalidatePath("/admin");
-  revalidateAdminContentRoutes(data.id);
-  redirect(`/admin/contents/${data.id}/edit`);
+  revalidateAdminContentRoutes(createdContentId);
+  redirect(`/admin/contents/${createdContentId}/edit`);
 }
 
 export async function updateContentAction(id: string, formData: FormData) {
@@ -102,6 +135,8 @@ export async function updateContentAction(id: string, formData: FormData) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const previousThumbnailPath = parseText(formData.get("previous_thumbnail_storage_path")) || null;
+  const nextThumbnailPath = parseText(formData.get("thumbnail_storage_path")) || null;
   const payload = {
     title: parseText(formData.get("title")),
     summary: parseText(formData.get("summary")),
@@ -117,14 +152,30 @@ export async function updateContentAction(id: string, formData: FormData) {
     updated_at: new Date().toISOString(),
   };
 
-  if (payload.is_hero) {
-    await supabase.from("contents").update({ is_hero: false }).neq("id", id).eq("is_hero", true);
+  try {
+    if (payload.is_hero) {
+      const { error: heroError } = await supabase.from("contents").update({ is_hero: false }).neq("id", id).eq("is_hero", true);
+
+      if (heroError) {
+        throw new Error(heroError.message);
+      }
+    }
+
+    const { error } = await supabase.from("contents").update(payload).eq("id", id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  } catch (error) {
+    if (nextThumbnailPath && nextThumbnailPath !== previousThumbnailPath) {
+      await removeThumbnailIfExists(nextThumbnailPath);
+    }
+
+    throw error;
   }
 
-  const { error } = await supabase.from("contents").update(payload).eq("id", id);
-
-  if (error) {
-    throw new Error(error.message);
+  if (previousThumbnailPath && previousThumbnailPath !== nextThumbnailPath) {
+    await removeThumbnailIfExists(previousThumbnailPath);
   }
 
   revalidateMagazine();
@@ -215,15 +266,21 @@ export async function createBannerAction(formData: FormData) {
   if (!hasSupabaseEnv()) redirect("/admin/banners");
 
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("banners").insert({
+  const nextBannerPath = parseText(formData.get("banner_storage_path")) || null;
+  const payload = {
     image_url: parseText(formData.get("image_url")),
     link_url: parseText(formData.get("link_url")) || null,
     starts_at: parseText(formData.get("starts_at")) || null,
     ends_at: parseText(formData.get("ends_at")) || null,
     is_active: parseBoolean(formData.get("is_active")),
-  });
+  };
 
-  if (error) throw new Error(error.message);
+  const { error } = await supabase.from("banners").insert(payload);
+
+  if (error) {
+    await removeBannerIfExists(nextBannerPath);
+    throw new Error(error.message);
+  }
 
   revalidateMagazine();
   revalidatePath("/admin");
@@ -236,18 +293,29 @@ export async function updateBannerAction(id: string, formData: FormData) {
   if (!hasSupabaseEnv()) redirect("/admin/banners");
 
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
-    .from("banners")
-    .update({
-      image_url: parseText(formData.get("image_url")),
-      link_url: parseText(formData.get("link_url")) || null,
-      starts_at: parseText(formData.get("starts_at")) || null,
-      ends_at: parseText(formData.get("ends_at")) || null,
-      is_active: parseBoolean(formData.get("is_active")),
-    })
-    .eq("id", id);
+  const previousBannerPath = parseText(formData.get("previous_banner_storage_path")) || null;
+  const nextBannerPath = parseText(formData.get("banner_storage_path")) || null;
+  const payload = {
+    image_url: parseText(formData.get("image_url")),
+    link_url: parseText(formData.get("link_url")) || null,
+    starts_at: parseText(formData.get("starts_at")) || null,
+    ends_at: parseText(formData.get("ends_at")) || null,
+    is_active: parseBoolean(formData.get("is_active")),
+  };
 
-  if (error) throw new Error(error.message);
+  const { error } = await supabase.from("banners").update(payload).eq("id", id);
+
+  if (error) {
+    if (nextBannerPath && nextBannerPath !== previousBannerPath) {
+      await removeBannerIfExists(nextBannerPath);
+    }
+
+    throw new Error(error.message);
+  }
+
+  if (previousBannerPath && previousBannerPath !== nextBannerPath) {
+    await removeBannerIfExists(previousBannerPath);
+  }
 
   revalidateMagazine();
   revalidatePath("/admin");
@@ -260,9 +328,21 @@ export async function deleteBannerAction(id: string) {
   if (!hasSupabaseEnv()) redirect("/admin/banners");
 
   const supabase = createSupabaseAdminClient();
+  const { data: bannerRow, error: fetchError } = await supabase
+    .from("banners")
+    .select("image_url")
+    .eq("id", id)
+    .single();
+
+  if (fetchError) {
+    throw new Error(fetchError.message);
+  }
+
   const { error } = await supabase.from("banners").delete().eq("id", id);
 
   if (error) throw new Error(error.message);
+
+  await removeBannerIfExists(extractBannerStoragePath(parseText(bannerRow?.image_url ?? null)));
 
   revalidateMagazine();
   revalidatePath("/admin");

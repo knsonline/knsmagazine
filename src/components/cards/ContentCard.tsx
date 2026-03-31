@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
+import { MagazineImage } from "@/components/ui/MagazineImage";
 import { formatKoreanDate } from "@/lib/utils/format";
 import type { ContentItem } from "@/types/content";
 
@@ -15,11 +15,11 @@ export function ContentCard({ content }: ContentCardProps) {
       className="card-surface group flex h-full flex-col overflow-hidden transition-transform duration-200 hover:-translate-y-1"
     >
       <div className="relative aspect-[16/10] overflow-hidden">
-        <Image
+        <MagazineImage
           src={content.thumbnailUrl}
           alt={content.title}
-          fill
           className="object-cover transition duration-300 group-hover:scale-[1.02]"
+          sizes="(max-width: 1024px) 100vw, 33vw"
         />
       </div>
 

@@ -1,6 +1,19 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { createContentAction, updateContentAction } from "@/app/admin/actions";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { GRADES, TOPICS } from "@/constants/taxonomy";
+import { prepareThumbnailFile } from "@/lib/storage/thumbnail-image-client";
+import {
+  THUMBNAIL_ACCEPT_ATTRIBUTE,
+  THUMBNAIL_MAX_FILE_SIZE_BYTES,
+  THUMBNAIL_TARGET_MAX_DIMENSION,
+  extractThumbnailStoragePath,
+  getThumbnailValidationError,
+} from "@/lib/storage/thumbnails";
 import type { ContentItem, Cta } from "@/types/content";
 
 interface ContentEditorFormProps {
@@ -9,8 +22,23 @@ interface ContentEditorFormProps {
   footerAction?: ReactNode;
 }
 
+function SubmitButton({ hasContent, disabled }: { hasContent: boolean; disabled: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending || disabled}
+      className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-cta-primary px-5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {pending ? "저장 중..." : hasContent ? "콘텐츠 수정하기" : "새 콘텐츠 등록하기"}
+    </button>
+  );
+}
+
 export function ContentEditorForm({ content, ctas, footerAction }: ContentEditorFormProps) {
   const action = content ? updateContentAction.bind(null, content.id) : createContentAction;
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
 
   return (
     <form action={action} className="card-surface space-y-6 p-6">
@@ -56,18 +84,27 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
         />
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-semibold text-text-primary" htmlFor="thumbnail_url">
-          썸네일 이미지 URL
-        </label>
-        <input
-          id="thumbnail_url"
-          name="thumbnail_url"
-          type="url"
-          defaultValue={content?.thumbnailUrl}
-          className="min-h-12 w-full rounded-2xl border border-black/10 bg-ivory px-4 outline-none"
-        />
-      </div>
+      <ImageUploader
+        initialUrl={content?.thumbnailUrlRaw}
+        onUploadingChange={setIsUploadingThumbnail}
+        uploadEndpoint="/api/admin/uploads/thumbnails"
+        fileInputId="thumbnail_file"
+        assetName="썸네일 이미지"
+        acceptAttribute={THUMBNAIL_ACCEPT_ATTRIBUTE}
+        acceptDisplayLabel="JPG, PNG, WEBP"
+        maxFileSizeBytes={THUMBNAIL_MAX_FILE_SIZE_BYTES}
+        targetMaxDimension={THUMBNAIL_TARGET_MAX_DIMENSION}
+        emptyPreviewMessage="업로드한 썸네일이 여기에서 미리 보여요."
+        replaceHintMessage="수정 화면에서는 새 파일을 올린 뒤 저장하면 기존 썸네일이 자동으로 교체됩니다."
+        fieldNames={{
+          url: "thumbnail_url",
+          storagePath: "thumbnail_storage_path",
+          previousStoragePath: "previous_thumbnail_storage_path",
+        }}
+        extractStoragePath={extractThumbnailStoragePath}
+        validateFile={getThumbnailValidationError}
+        prepareFile={prepareThumbnailFile}
+      />
 
       <div className="grid gap-6 xl:grid-cols-4">
         <div className="space-y-2">
@@ -157,13 +194,11 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-cta-primary px-5 text-sm font-semibold text-white"
-        >
-          {content ? "콘텐츠 저장하기" : "새 콘텐츠 등록하기"}
-        </button>
+        <SubmitButton hasContent={Boolean(content)} disabled={isUploadingThumbnail} />
         {footerAction}
+        {isUploadingThumbnail ? (
+          <p className="text-sm text-warning">썸네일 업로드가 끝난 뒤 저장할 수 있어요.</p>
+        ) : null}
         {content ? (
           <p className="text-sm text-text-secondary">퍼블릭 경로: /contents/{content.slug}</p>
         ) : null}

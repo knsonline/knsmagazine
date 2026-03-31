@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
   const collection = await getCollectionBySlug(decodeURIComponent(resolvedParams.slug));
 
   return {
-    title: collection?.name ?? "\uCEEC\uB809\uC158",
+    title: collection?.name ?? "컬렉션",
   };
 }
 
@@ -48,7 +48,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
         <div className="shell">
           <SectionHeader
             title={collection.name}
-            description="\uD55C \uC8FC\uC81C\uB97C \uC785\uCCB4\uC801\uC73C\uB85C \uC774\uD574\uD560 \uC218 \uC788\uB3C4\uB85D \uC5F0\uACB0\uD55C \uD050\uB808\uC774\uC158 \uBB36\uC74C\uC785\uB2C8\uB2E4."
+            description="한 주제를 입체적으로 이해할 수 있도록 연결한 큐레이션 묶음입니다."
           />
 
           {lead ? (
@@ -59,16 +59,16 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                   rest.map((item) => <CompactContentCard key={item.id} content={item} />)
                 ) : (
                   <EmptyState
-                    title="\uB300\uD45C \uCF58\uD150\uCE20\uBD80\uD130 \uBA3C\uC800 \uC77D\uC5B4 \uBCF4\uC138\uC694."
-                    description="\uC774 \uCEEC\uB809\uC158\uC740 \uD575\uC2EC \uCF58\uD150\uCE20\uB97C \uC911\uC2EC\uC73C\uB85C \uCC28\uBD84\uD558\uAC8C \uD655\uC7A5\uB429\uB2C8\uB2E4."
+                    title="대표 콘텐츠부터 먼저 읽어 보세요."
+                    description="이 컬렉션은 핵심 콘텐츠를 중심으로 차분하게 확장됩니다."
                   />
                 )}
               </div>
             </div>
           ) : (
             <EmptyState
-              title="\uCEEC\uB809\uC158\uC774 \uBE44\uC5B4 \uC788\uC5B4\uC694."
-              description="\uACE7 \uAD00\uB828 \uCF58\uD150\uCE20\uAC00 \uCC44\uC6CC\uC9C8 \uC608\uC815\uC785\uB2C8\uB2E4."
+              title="컬렉션이 비어 있어요."
+              description="곧 관련 콘텐츠가 채워질 예정입니다."
             />
           )}
         </div>

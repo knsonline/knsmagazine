@@ -23,10 +23,8 @@ export default async function AdminContentEditPage({ params }: AdminContentEditP
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-[-0.03em] text-text-primary">{"\uCF58\uD150\uCE20 \uC218\uC815"}</h1>
-        <p className="mt-2 text-sm text-text-secondary">
-          {"\uC2AC\uB7EC\uADF8\uB294 ID \uC55E 8\uC790\uB9AC\uB85C \uC790\uB3D9 \uC0DD\uC131\uB429\uB2C8\uB2E4."}
-        </p>
+        <h1 className="text-3xl font-bold tracking-[-0.03em] text-text-primary">콘텐츠 수정</h1>
+        <p className="mt-2 text-sm text-text-secondary">슬러그는 ID 앞 8자리로 자동 생성됩니다.</p>
       </div>
       <ContentEditorForm
         content={content}
@@ -37,7 +35,7 @@ export default async function AdminContentEditPage({ params }: AdminContentEditP
             formAction={deleteContentAction.bind(null, content.id)}
             className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-error/20 bg-white px-5 text-sm font-semibold text-error"
           >
-            {"\uCF58\uD150\uCE20 \uC0AD\uC81C"}
+            콘텐츠 삭제
           </button>
         }
       />

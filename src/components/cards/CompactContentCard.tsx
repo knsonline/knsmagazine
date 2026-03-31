@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
+import { MagazineImage } from "@/components/ui/MagazineImage";
 import { formatKoreanDate } from "@/lib/utils/format";
 import type { ContentItem } from "@/types/content";
 
@@ -15,7 +15,12 @@ export function CompactContentCard({ content }: CompactContentCardProps) {
       className="card-surface group flex gap-4 overflow-hidden p-4 transition-transform duration-200 hover:-translate-y-1"
     >
       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl">
-        <Image src={content.thumbnailUrl} alt={content.title} fill className="object-cover" />
+        <MagazineImage
+          src={content.thumbnailUrl}
+          alt={content.title}
+          className="object-cover"
+          sizes="96px"
+        />
       </div>
 
       <div className="min-w-0 space-y-3">

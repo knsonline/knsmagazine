@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
+import { MagazineImage } from "@/components/ui/MagazineImage";
 import { formatKoreanDate } from "@/lib/utils/format";
 import type { ContentItem } from "@/types/content";
 
@@ -15,7 +15,12 @@ export function ContentListCard({ content }: ContentListCardProps) {
       className="card-surface group flex flex-col overflow-hidden transition-transform duration-200 hover:-translate-y-1 sm:flex-row"
     >
       <div className="relative aspect-[16/10] sm:aspect-auto sm:w-[240px] sm:shrink-0">
-        <Image src={content.thumbnailUrl} alt={content.title} fill className="object-cover" />
+        <MagazineImage
+          src={content.thumbnailUrl}
+          alt={content.title}
+          className="object-cover"
+          sizes="(max-width: 640px) 100vw, 240px"
+        />
       </div>
 
       <div className="flex flex-1 flex-col gap-4 p-5 sm:p-6">

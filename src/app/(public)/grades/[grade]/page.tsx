@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: GradePageProps): Promise<Meta
   const grade = decodeURIComponent(resolvedParams.grade);
 
   return {
-    title: `${grade} \uCF58\uD150\uCE20`,
+    title: `${grade} 콘텐츠`,
   };
 }
 
@@ -40,8 +40,8 @@ export default async function GradePage({ params }: GradePageProps) {
       <section className="section-space bg-white">
         <div className="shell">
           <SectionHeader
-            title={`${grade} \uCF58\uD150\uCE20`}
-            description={`${grade} \uD559\uBD80\uBAA8\uB2D8\uC774 \uAC00\uC7A5 \uB9CE\uC774 \uCC3E\uB294 \uC601\uC5B4 \uD559\uC2B5 \uCF58\uD150\uCE20\uB97C \uBAA8\uC544 \uBCF4\uC558\uC2B5\uB2C8\uB2E4.`}
+            title={`${grade} 콘텐츠`}
+            description={`${grade} 학부모님이 가장 많이 찾는 영어 학습 콘텐츠를 모아 보았습니다.`}
           />
 
           {items.length > 0 ? (
@@ -52,8 +52,8 @@ export default async function GradePage({ params }: GradePageProps) {
             </div>
           ) : (
             <EmptyState
-              title="\uC544\uC9C1 \uB4F1\uB85D\uB41C \uCF58\uD150\uCE20\uAC00 \uC5C6\uC5B4\uC694."
-              description="\uACE7 \uC774 \uD559\uB144\uC744 \uC704\uD55C \uCF58\uD150\uCE20\uAC00 \uCD94\uAC00\uB429\uB2C8\uB2E4."
+              title="아직 등록된 콘텐츠가 없어요."
+              description="곧 이 학년을 위한 콘텐츠가 추가됩니다."
             />
           )}
         </div>
