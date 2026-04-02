@@ -15,6 +15,7 @@ create table if not exists public.contents (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   summary text,
+  body text,
   external_url text not null,
   thumbnail_url text,
   grade grade_enum not null,
@@ -68,6 +69,7 @@ create table if not exists public.events (
   utm_source text,
   utm_medium text,
   utm_campaign text,
+  utm_content text,
   device_type text,
   created_at timestamptz not null default now()
 );

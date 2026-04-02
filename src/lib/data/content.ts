@@ -4,12 +4,14 @@ import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getPlaceholderImage } from "@/lib/utils/format";
 import { getIdSlugPrefix } from "@/lib/utils/slug";
+import { normalizeMultilineText } from "@/lib/utils/text";
 import type { ContentType, Grade, Topic, BannerItem, CollectionItem, ContentItem, Cta } from "@/types/content";
 import type { BannerRow, CollectionItemRow, CollectionRow, ContentRow, CtaRow, EventRow } from "@/types/database";
 
 interface SeedContent {
   title: string;
   summary: string;
+  body?: string;
   external_url: string;
   thumbnail_url: string;
   grade: Grade;
@@ -67,7 +69,8 @@ function mapContentRow(row: ContentRow, viewCount = 0): ContentItem {
     id: row.id,
     slug: getIdSlugPrefix(row.id),
     title: row.title,
-    summary: row.summary ?? "",
+    summary: normalizeMultilineText(row.summary),
+    body: normalizeMultilineText(row.body),
     externalUrl: row.external_url,
     thumbnailUrl: getPlaceholderImage(row.thumbnail_url),
     thumbnailUrlRaw: row.thumbnail_url,
@@ -119,7 +122,8 @@ function mapSeedData() {
         id,
         slug: getIdSlugPrefix(`${index + 1}`.padStart(8, "0")),
         title: content.title,
-        summary: content.summary,
+        summary: normalizeMultilineText(content.summary),
+        body: normalizeMultilineText(content.body),
         externalUrl: content.external_url,
         thumbnailUrl: getPlaceholderImage(content.thumbnail_url),
         thumbnailUrlRaw: content.thumbnail_url,
@@ -180,6 +184,9 @@ async function getPublishedContentRows() {
 }
 
 async function getEventRows() {
+  // MVP 단계에서는 events를 직접 읽어 메모리에서 조회수를 계산해도 운영 가능하지만,
+  // 로그가 커질수록 응답 시간과 메모리 사용량이 빠르게 나빠질 수 있습니다.
+  // 후속 차수에서는 RPC, materialized view, summary table, edge/job 집계로 옮기는 편이 안전합니다.
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.from("events").select("content_id,event_type,created_at");
 

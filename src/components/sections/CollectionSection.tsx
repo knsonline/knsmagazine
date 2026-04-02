@@ -25,9 +25,11 @@ export function CollectionSection({
         />
 
         {lead ? (
-          <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-            <ContentCard content={lead} />
-            <div className="space-y-4">
+          <div className="grid gap-5 lg:grid-cols-[1.6fr_minmax(0,1fr)] lg:items-start">
+            <div className="min-w-0">
+              <ContentCard content={lead} />
+            </div>
+            <div className="min-w-0 space-y-4">
               {rest.length > 0 ? (
                 rest.map((content) => <CompactContentCard key={content.id} content={content} />)
               ) : (

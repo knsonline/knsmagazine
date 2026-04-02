@@ -1,7 +1,9 @@
 import type { ContentType, Grade, Topic } from "@/types/content";
 
 export type AnalyticsEventType =
+  | "session_start"
   | "page_view"
+  | "content_impression"
   | "content_view"
   | "content_click"
   | "cta_click"
@@ -22,6 +24,8 @@ export interface AnalyticsEventPayload {
   contentType?: ContentType;
   externalUrl?: string;
   ctaLabel?: string;
+  contentSlug?: string;
+  placement?: string;
 }
 
 export interface AnalyticsEventRecord extends AnalyticsEventPayload {
@@ -30,6 +34,7 @@ export interface AnalyticsEventRecord extends AnalyticsEventPayload {
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
+  utmContent?: string;
   deviceType: "mobile" | "desktop";
   timestamp: string;
 }

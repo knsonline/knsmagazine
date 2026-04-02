@@ -1,10 +1,16 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createContentAction, updateContentAction } from "@/app/admin/actions";
+import { ContentDetailPreview } from "@/components/admin/ContentDetailPreview";
 import { ImageUploader } from "@/components/admin/ImageUploader";
+import {
+  CONTENT_THUMBNAIL_RECOMMENDED_RATIO,
+  CONTENT_THUMBNAIL_RECOMMENDED_SIZE,
+  CONTENT_THUMBNAIL_SAFE_AREA_GUIDE,
+} from "@/constants/media";
 import { GRADES, TOPICS } from "@/constants/taxonomy";
 import { prepareThumbnailFile } from "@/lib/storage/thumbnail-image-client";
 import {
@@ -21,6 +27,18 @@ interface ContentEditorFormProps {
   ctas: Cta[];
   footerAction?: ReactNode;
 }
+
+const THUMBNAIL_GUIDE_COPY = {
+  ratio: `권장 비율 ${CONTENT_THUMBNAIL_RECOMMENDED_RATIO}`,
+  size: `권장 해상도 ${CONTENT_THUMBNAIL_RECOMMENDED_SIZE}`,
+  safeArea: CONTENT_THUMBNAIL_SAFE_AREA_GUIDE,
+};
+
+const CONTENT_FIELD_GUIDE = [
+  "제목: 홈과 카드에서 먼저 눈에 띄는 짧고 강한 한 줄",
+  "요약: 카드 소개와 상세 상단 설명에 들어가는 1~3문장",
+  "본문: 상세 페이지에서 읽히는 설명형 텍스트",
+];
 
 function SubmitButton({ hasContent, disabled }: { hasContent: boolean; disabled: boolean }) {
   const { pending } = useFormStatus();
@@ -39,9 +57,33 @@ function SubmitButton({ hasContent, disabled }: { hasContent: boolean; disabled:
 export function ContentEditorForm({ content, ctas, footerAction }: ContentEditorFormProps) {
   const action = content ? updateContentAction.bind(null, content.id) : createContentAction;
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [titlePreview, setTitlePreview] = useState(content?.title ?? "");
+  const [summaryPreview, setSummaryPreview] = useState(content?.summary ?? "");
+  const [bodyPreview, setBodyPreview] = useState(content?.body ?? "");
+
+  const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setTitlePreview(event.target.value);
+  };
+
+  const handleSummaryChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    setSummaryPreview(event.target.value);
+  };
+
+  const handleBodyChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    setBodyPreview(event.target.value);
+  };
 
   return (
     <form action={action} className="card-surface space-y-6 p-6">
+      <div className="rounded-2xl bg-ivory px-4 py-4 text-sm text-text-secondary">
+        <p className="font-semibold text-text-primary">입력 역할 가이드</p>
+        <div className="mt-2 space-y-2">
+          {CONTENT_FIELD_GUIDE.map((item) => (
+            <p key={item}>{item}</p>
+          ))}
+        </div>
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-2">
         <div className="space-y-2">
           <label className="text-sm font-semibold text-text-primary" htmlFor="title">
@@ -51,7 +93,8 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
             id="title"
             name="title"
             required
-            defaultValue={content?.title}
+            value={titlePreview}
+            onChange={handleTitleChange}
             className="min-h-12 w-full rounded-2xl border border-black/10 bg-ivory px-4 outline-none"
           />
         </div>
@@ -75,13 +118,37 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
         <label className="text-sm font-semibold text-text-primary" htmlFor="summary">
           요약
         </label>
+        <p className="text-sm text-text-secondary">카드와 상세 상단에 노출되는 소개 문구입니다. 1~3문장 정도가 가장 안정적입니다.</p>
         <textarea
           id="summary"
           name="summary"
           rows={4}
-          defaultValue={content?.summary}
+          value={summaryPreview}
+          onChange={handleSummaryChange}
           className="w-full rounded-2xl border border-black/10 bg-ivory px-4 py-3 outline-none"
         />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-text-primary" htmlFor="body">
+            본문
+          </label>
+          <p className="text-sm text-text-secondary">
+            긴 설명형 텍스트를 입력하는 영역입니다. Enter 줄바꿈과 빈 줄이 상세 페이지에서도 그대로 보존됩니다.
+          </p>
+          <textarea
+            id="body"
+            name="body"
+            rows={16}
+            value={bodyPreview}
+            onChange={handleBodyChange}
+            className="min-h-[360px] w-full resize-y rounded-3xl border border-black/10 bg-ivory px-4 py-4 text-base leading-8 outline-none"
+            placeholder={"예시)\n입시 변화 포인트를 먼저 정리해 주세요.\n\n학부모가 바로 이해할 수 있는 설명을 문단별로 나누어 작성하면 읽기 편합니다."}
+          />
+        </div>
+
+        <ContentDetailPreview title={titlePreview} summary={summaryPreview} body={bodyPreview} />
       </div>
 
       <ImageUploader
@@ -89,22 +156,30 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
         onUploadingChange={setIsUploadingThumbnail}
         uploadEndpoint="/api/admin/uploads/thumbnails"
         fileInputId="thumbnail_file"
-        assetName="썸네일 이미지"
+        assetName="콘텐츠 썸네일 이미지"
         acceptAttribute={THUMBNAIL_ACCEPT_ATTRIBUTE}
         acceptDisplayLabel="JPG, PNG, WEBP"
         maxFileSizeBytes={THUMBNAIL_MAX_FILE_SIZE_BYTES}
         targetMaxDimension={THUMBNAIL_TARGET_MAX_DIMENSION}
-        emptyPreviewMessage="업로드한 썸네일이 여기에서 미리 보여요."
-        replaceHintMessage="수정 화면에서는 새 파일을 올린 뒤 저장하면 기존 썸네일이 자동으로 교체됩니다."
+        emptyPreviewMessage="업로드한 썸네일이 여기에서 미리 보입니다."
+        replaceHintMessage="수정 화면에서 새 파일을 저장하면 기존 썸네일은 자동으로 교체됩니다."
         fieldNames={{
           url: "thumbnail_url",
           storagePath: "thumbnail_storage_path",
           previousStoragePath: "previous_thumbnail_storage_path",
         }}
+        previewAspectClassName="aspect-video"
         extractStoragePath={extractThumbnailStoragePath}
         validateFile={getThumbnailValidationError}
         prepareFile={prepareThumbnailFile}
       />
+
+      <div className="rounded-2xl bg-ivory px-4 py-4 text-sm text-text-secondary">
+        <p className="font-semibold text-text-primary">콘텐츠 썸네일 가이드</p>
+        <p className="mt-2">{THUMBNAIL_GUIDE_COPY.ratio}</p>
+        <p className="mt-1">{THUMBNAIL_GUIDE_COPY.size}</p>
+        <p className="mt-1">{THUMBNAIL_GUIDE_COPY.safeArea}</p>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-4">
         <div className="space-y-2">
@@ -189,7 +264,7 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
         </label>
         <label className="flex min-h-11 items-center gap-3 rounded-2xl bg-ivory px-4 text-sm font-semibold text-text-primary">
           <input name="is_hero" type="checkbox" defaultChecked={content?.isHero} />
-          대표 콘텐츠
+          히어로 콘텐츠
         </label>
       </div>
 

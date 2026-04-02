@@ -23,6 +23,7 @@ export function TopPromoBanner({ banner }: TopPromoBannerProps) {
             eventType: "banner_click",
             pagePath: "/",
             bannerId: banner.id,
+            placement: "top_promo_banner",
           }}
           className="flex min-h-11 items-center justify-center py-2 text-center text-sm font-semibold tracking-[-0.01em]"
         >

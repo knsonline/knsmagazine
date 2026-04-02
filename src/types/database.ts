@@ -4,6 +4,7 @@ export interface ContentRow {
   id: string;
   title: string;
   summary: string | null;
+  body: string | null;
   external_url: string;
   thumbnail_url: string | null;
   grade: Grade;
@@ -63,6 +64,7 @@ export interface EventRow {
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
+  utm_content: string | null;
   device_type: string | null;
   created_at: string;
 }

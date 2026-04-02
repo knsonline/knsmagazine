@@ -9,6 +9,7 @@ import { BANNER_BUCKET, extractBannerStoragePath } from "@/lib/storage/banners";
 import { PRIMARY_GRADES, TOPICS } from "@/constants/taxonomy";
 import { THUMBNAIL_BUCKET } from "@/lib/storage/thumbnails";
 import { getIdSlugPrefix } from "@/lib/utils/slug";
+import { toNullableMultilineText } from "@/lib/utils/text";
 
 function parseBoolean(value: FormDataEntryValue | null) {
   return value === "on" || value === "true";
@@ -16,6 +17,10 @@ function parseBoolean(value: FormDataEntryValue | null) {
 
 function parseText(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function parseMultilineText(value: FormDataEntryValue | null) {
+  return toNullableMultilineText(typeof value === "string" ? value : "");
 }
 
 async function removeStorageObjectIfExists(bucket: string, path: string | null) {
@@ -85,7 +90,8 @@ export async function createContentAction(formData: FormData) {
   const nextThumbnailPath = parseText(formData.get("thumbnail_storage_path")) || null;
   const payload = {
     title: parseText(formData.get("title")),
-    summary: parseText(formData.get("summary")),
+    summary: parseMultilineText(formData.get("summary")),
+    body: parseMultilineText(formData.get("body")),
     external_url: parseText(formData.get("external_url")),
     thumbnail_url: parseText(formData.get("thumbnail_url")) || null,
     grade: parseText(formData.get("grade")),
@@ -139,7 +145,8 @@ export async function updateContentAction(id: string, formData: FormData) {
   const nextThumbnailPath = parseText(formData.get("thumbnail_storage_path")) || null;
   const payload = {
     title: parseText(formData.get("title")),
-    summary: parseText(formData.get("summary")),
+    summary: parseMultilineText(formData.get("summary")),
+    body: parseMultilineText(formData.get("body")),
     external_url: parseText(formData.get("external_url")),
     thumbnail_url: parseText(formData.get("thumbnail_url")) || null,
     grade: parseText(formData.get("grade")),

@@ -5,8 +5,10 @@ import { TrackedExternalLink } from "@/components/analytics/TrackedExternalLink"
 import { ContentCard } from "@/components/cards/ContentCard";
 import { SoftCtaSection } from "@/components/sections/SoftCtaSection";
 import { Badge } from "@/components/ui/Badge";
+import { ContentThumbnail } from "@/components/ui/ContentThumbnail";
+import { ContentTypeInline } from "@/components/ui/ContentTypeInline";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { MagazineImage } from "@/components/ui/MagazineImage";
+import { PlainTextContent } from "@/components/ui/PlainTextContent";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { getContentBySlug, getContextualCta, getRelatedContents } from "@/lib/data/content";
 import { formatKoreanDate } from "@/lib/utils/format";
@@ -23,7 +25,7 @@ export async function generateMetadata({ params }: ContentDetailPageProps): Prom
 
   return {
     title: content?.title ?? "콘텐츠",
-    description: content?.summary,
+    description: content?.summary || content?.body,
   };
 }
 
@@ -39,6 +41,7 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
     getRelatedContents(content, 3),
     getContextualCta(content),
   ]);
+  const hasBody = content.body.length > 0;
 
   return (
     <>
@@ -55,15 +58,13 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
       <section className="section-space bg-white">
         <div className="shell">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-            <div className="relative aspect-[16/10] overflow-hidden rounded-[32px]">
-              <MagazineImage
-                src={content.thumbnailUrl}
-                alt={content.title}
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                priority
-              />
-            </div>
+            <ContentThumbnail
+              src={content.thumbnailUrl}
+              alt={content.title}
+              containerClassName="rounded-[32px]"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              priority
+            />
 
             <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-2">
@@ -76,12 +77,11 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
               <h1 className="text-[34px] font-bold leading-[1.18] tracking-[-0.04em] text-text-primary">
                 {content.title}
               </h1>
-              <p className="text-base text-text-secondary sm:text-lg">{content.summary}</p>
+              <p className="whitespace-pre-line text-base leading-8 text-text-secondary sm:text-lg">
+                {content.summary || "상세 설명은 아래 본문에서 확인할 수 있습니다."}
+              </p>
 
-              <div className="flex items-center gap-2 text-sm font-semibold text-navy">
-                <span>{content.contentType === "영상" ? "▶" : "▣"}</span>
-                <span>{content.contentType}</span>
-              </div>
+              <ContentTypeInline contentType={content.contentType} className="text-sm font-semibold text-navy" />
 
               <div className="flex flex-wrap gap-3 pt-3">
                 <TrackedExternalLink
@@ -90,9 +90,11 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
                     eventType: "content_click",
                     pagePath: `/contents/${content.slug}`,
                     contentId: content.id,
+                    contentSlug: content.slug,
                     grade: content.grade,
                     topic: content.topic,
                     externalUrl: content.externalUrl,
+                    placement: "content_primary",
                   }}
                   className="inline-flex min-h-12 items-center rounded-full bg-cta-primary px-6 text-sm font-semibold text-white transition hover:bg-navy-light"
                 >
@@ -107,6 +109,8 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
                     ctaId: contextualCta.id,
                     contentId: content.id,
                     ctaLabel: contextualCta.label,
+                    contentSlug: content.slug,
+                    placement: "content_detail_cta",
                   }}
                   className="inline-flex min-h-12 items-center rounded-full border border-black/10 bg-white px-6 text-sm font-semibold text-text-primary transition hover:border-navy/20 hover:text-navy"
                 >
@@ -115,6 +119,19 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
               </div>
             </div>
           </div>
+
+          {hasBody ? (
+            <article className="mt-10 rounded-[32px] bg-ivory px-6 py-7 sm:px-8 sm:py-9">
+              <div className="max-w-3xl">
+                <p className="text-sm font-semibold text-text-secondary">상세 설명</p>
+                <PlainTextContent
+                  text={content.body}
+                  className="mt-4"
+                  paragraphClassName="text-base leading-8 text-text-primary sm:text-lg"
+                />
+              </div>
+            </article>
+          ) : null}
         </div>
       </section>
 

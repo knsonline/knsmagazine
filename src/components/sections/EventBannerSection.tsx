@@ -34,6 +34,7 @@ export function EventBannerSection({ banners }: EventBannerSectionProps) {
                   eventType: "banner_click",
                   pagePath: "/",
                   bannerId: banner.id,
+                  placement: "event_banner_grid",
                 }}
                 className="card-surface group overflow-hidden"
               >

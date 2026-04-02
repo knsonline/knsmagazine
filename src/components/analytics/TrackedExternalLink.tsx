@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import { buildOutboundTrackedUrl } from "@/lib/analytics/attribution";
 import { trackEvent } from "@/lib/analytics/tracker";
 import type { AnalyticsEventPayload } from "@/types/analytics";
 
@@ -16,9 +18,21 @@ export function TrackedExternalLink({
   event,
   children,
 }: TrackedExternalLinkProps) {
+  const trackedHref = useMemo(
+    () =>
+      buildOutboundTrackedUrl({
+        rawUrl: href,
+        eventType: event.eventType,
+        pagePath: event.pagePath,
+        placement: event.placement,
+        contentSlug: event.contentSlug,
+      }),
+    [event.contentSlug, event.eventType, event.pagePath, event.placement, href],
+  );
+
   return (
     <a
-      href={href}
+      href={trackedHref}
       target="_blank"
       rel="noreferrer"
       className={className}

@@ -23,6 +23,7 @@ export function SoftCtaSection({ cta, pagePath }: SoftCtaSectionProps) {
                 pagePath,
                 ctaId: cta.id,
                 ctaLabel: cta.label,
+                placement: "soft_cta",
               }}
               className="inline-flex min-h-12 items-center rounded-full bg-gold px-6 text-sm font-semibold text-navy transition hover:bg-gold-light"
             >

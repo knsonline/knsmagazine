@@ -1,6 +1,7 @@
 interface BadgeProps {
   children: React.ReactNode;
   tone?: "navy" | "gold" | "muted" | "success";
+  className?: string;
 }
 
 const toneClassName = {
@@ -10,10 +11,10 @@ const toneClassName = {
   success: "bg-success/10 text-success",
 } as const;
 
-export function Badge({ children, tone = "navy" }: BadgeProps) {
+export function Badge({ children, tone = "navy", className }: BadgeProps) {
   return (
     <span
-      className={`inline-flex min-h-7 items-center rounded-full px-3 text-[13px] font-semibold ${toneClassName[tone]}`}
+      className={`inline-flex min-h-7 w-fit shrink-0 self-start items-center rounded-full px-3 text-[13px] font-semibold ${toneClassName[tone]} ${className ?? ""}`}
     >
       {children}
     </span>

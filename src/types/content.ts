@@ -15,6 +15,7 @@ export interface ContentItem {
   slug: string;
   title: string;
   summary: string;
+  body: string;
   externalUrl: string;
   thumbnailUrl: string;
   thumbnailUrlRaw?: string | null;

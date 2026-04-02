@@ -1,22 +1,67 @@
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getActiveBanners, getCtas, getHomeCollections, getPublishedContents } from "@/lib/data/content";
-import { getPlaceholderImage, startOfDay, startOfDaysAgo } from "@/lib/utils/format";
+import {
+  formatKstMonthDay,
+  getKstDateKey,
+  getKstStartOfDay,
+  getKstStartOfDaysAgo,
+  getPlaceholderImage,
+} from "@/lib/utils/format";
 import { getIdSlugPrefix } from "@/lib/utils/slug";
+import { normalizeMultilineText } from "@/lib/utils/text";
 import type { BannerItem, CollectionItem, ContentItem, Cta, Grade } from "@/types/content";
 import type { BannerRow, CollectionItemRow, CollectionRow, ContentRow, CtaRow, EventRow } from "@/types/database";
 
+export interface AdminSummaryItem {
+  label: string;
+  value: number;
+  meta?: string;
+  href?: string;
+}
+
 export interface AdminDashboardData {
   totalPublishedContents: number;
-  todayViews: number;
-  weeklyCtaClicks: number;
-  popularContents: Array<ContentItem & { score: number }>;
+  todayPageViews: number;
+  totalPageViews: number;
+  todaySessions: number;
+  totalSessions: number;
+  todayContentViews: number;
+  todayCtaClicks: number;
+  todayBannerClicks: number;
+  dailyPageViews: Array<{ date: string; value: number }>;
+  topSources: AdminSummaryItem[];
+  topMediums: AdminSummaryItem[];
+  topCampaigns: AdminSummaryItem[];
+  topLandingPages: AdminSummaryItem[];
+  topContents: AdminSummaryItem[];
+  topCtas: AdminSummaryItem[];
+  topBanners: AdminSummaryItem[];
   recentContents: ContentItem[];
   alerts: string[];
-  dailyViews: Array<{ date: string; value: number }>;
-  gradeInterest: Array<{ label: string; value: number }>;
-  ctaRanking: Array<{ cta: Cta; clicks: number }>;
-  utmRanking: Array<{ label: string; visits: number }>;
+}
+
+type DashboardEventRow = Pick<
+  EventRow,
+  | "event_type"
+  | "session_id"
+  | "content_id"
+  | "cta_id"
+  | "banner_id"
+  | "page_path"
+  | "utm_source"
+  | "utm_medium"
+  | "utm_campaign"
+  | "created_at"
+>;
+
+interface SessionEntry {
+  sessionId: string;
+  pagePath: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  createdAt: string;
 }
 
 function mapContentRow(row: ContentRow): ContentItem {
@@ -24,7 +69,8 @@ function mapContentRow(row: ContentRow): ContentItem {
     id: row.id,
     slug: getIdSlugPrefix(row.id),
     title: row.title,
-    summary: row.summary ?? "",
+    summary: normalizeMultilineText(row.summary),
+    body: normalizeMultilineText(row.body),
     externalUrl: row.external_url,
     thumbnailUrl: getPlaceholderImage(row.thumbnail_url),
     thumbnailUrlRaw: row.thumbnail_url,
@@ -45,7 +91,7 @@ function mapContentRow(row: ContentRow): ContentItem {
 function mapBannerRow(row: BannerRow): BannerItem {
   return {
     id: row.id,
-    title: row.starts_at ? `${new Date(row.starts_at).getFullYear()} 설명회 일정 확인하기` : "KNS 설명회 일정 확인하기",
+    title: row.starts_at ? `${new Date(row.starts_at).getFullYear()} 설명회 일정 보기` : "KNS 설명회 일정 보기",
     imageUrl: getPlaceholderImage(row.image_url),
     imageUrlRaw: row.image_url,
     linkUrl: row.link_url ?? "#",
@@ -64,6 +110,119 @@ function mapCtaRow(row: CtaRow, usageCount = 0): Cta {
     createdAt: row.created_at,
     usageCount,
   };
+}
+
+function buildDashboardAlerts(contents: ContentItem[], banners: BannerItem[], totalPageViews: number): string[] {
+  const alerts: string[] = [];
+
+  if (totalPageViews === 0) {
+    alerts.push("아직 데이터가 쌓이고 있어요. 공개 페이지 유입이 생기면 숫자가 채워집니다.");
+  }
+
+  if (contents.every((content) => !content.isHero)) {
+    alerts.push("현재 히어로로 지정된 대표 콘텐츠가 없습니다.");
+  }
+
+  const expiringBannerAlerts = banners
+    .filter((banner) => banner.endsAt)
+    .map((banner) => {
+      const remainingDays = Math.ceil((new Date(banner.endsAt as string).getTime() - Date.now()) / 86400000);
+
+      if (remainingDays > 7) {
+        return null;
+      }
+
+      return `배너 노출 종료가 ${Math.max(remainingDays, 0)}일 남았습니다.`;
+    })
+    .filter((message): message is string => Boolean(message));
+
+  alerts.push(...expiringBannerAlerts);
+  alerts.push("관리자 접속 브라우저는 기본적으로 통계 수집에서 제외되며, 외부 테스트 접속은 일부 포함될 수 있습니다.");
+
+  return alerts;
+}
+
+function formatLandingPage(pagePath: string | null): string {
+  if (!pagePath || pagePath === "/") {
+    return "홈";
+  }
+
+  if (pagePath.startsWith("/contents/")) {
+    return `콘텐츠 상세 ${pagePath.replace("/contents/", "")}`;
+  }
+
+  if (pagePath === "/contents") {
+    return "전체 콘텐츠";
+  }
+
+  if (pagePath.startsWith("/grades/")) {
+    return `학년 페이지 ${decodeURIComponent(pagePath.replace("/grades/", ""))}`;
+  }
+
+  if (pagePath.startsWith("/search")) {
+    return "검색";
+  }
+
+  if (pagePath.startsWith("/collections/")) {
+    return `컬렉션 ${pagePath.replace("/collections/", "")}`;
+  }
+
+  return pagePath;
+}
+
+function buildTopItems(
+  counts: Map<string, number>,
+  options?: {
+    limit?: number;
+    transformLabel?: (key: string) => string;
+    buildMeta?: (key: string) => string | undefined;
+    buildHref?: (key: string) => string | undefined;
+  },
+): AdminSummaryItem[] {
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, options?.limit ?? 4)
+    .map(([key, value]) => ({
+      label: options?.transformLabel ? options.transformLabel(key) : key,
+      value,
+      meta: options?.buildMeta?.(key),
+      href: options?.buildHref?.(key),
+    }));
+}
+
+function countBy(values: Array<string | null | undefined>, fallbackLabel = "미분류"): Map<string, number> {
+  const counts = new Map<string, number>();
+
+  values.forEach((value) => {
+    const key = value && value.trim().length > 0 ? value : fallbackLabel;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  });
+
+  return counts;
+}
+
+function getTodaySessionEntries(events: DashboardEventRow[]): SessionEntry[] {
+  const sorted = [...events].sort(
+    (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime(),
+  );
+  const sessions = new Map<string, SessionEntry>();
+
+  sorted.forEach((event) => {
+    if (!event.session_id || sessions.has(event.session_id)) {
+      return;
+    }
+
+    sessions.set(event.session_id, {
+      sessionId: event.session_id,
+      pagePath: event.page_path,
+      utmSource: event.utm_source,
+      utmMedium: event.utm_medium,
+      utmCampaign: event.utm_campaign,
+      createdAt: event.created_at,
+    });
+  });
+
+  return [...sessions.values()];
 }
 
 async function getAllContentsFromSupabase() {
@@ -138,19 +297,48 @@ async function getCtasFromSupabase() {
   return ((data ?? []) as CtaRow[]).map((row) => mapCtaRow(row));
 }
 
-async function getEventsFromSupabase() {
+async function getDashboardEventsFromSupabase(fromDateIso: string) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("events")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(5000);
+    .select("event_type,session_id,content_id,cta_id,banner_id,page_path,utm_source,utm_medium,utm_campaign,created_at")
+    .gte("created_at", fromDateIso)
+    .order("created_at", { ascending: false });
 
   if (error) {
     throw error;
   }
 
-  return (data ?? []) as EventRow[];
+  return (data ?? []) as DashboardEventRow[];
+}
+
+async function getTotalPageViewCountFromSupabase() {
+  const supabase = createSupabaseAdminClient();
+  const { count, error } = await supabase
+    .from("events")
+    .select("*", { count: "exact", head: true })
+    .eq("event_type", "page_view");
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+async function getAllPageViewSessionIdsFromSupabase() {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("session_id")
+    .eq("event_type", "page_view")
+    .not("session_id", "is", null);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as Array<{ session_id: string | null }>;
 }
 
 export async function getAdminContents(filters?: {
@@ -199,119 +387,166 @@ export async function getAdminCollections(): Promise<CollectionItem[]> {
 }
 
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
-  const [contents, ctas, banners, collections] = await Promise.all([
-    getAdminContents(),
-    getAdminCtas(),
-    getAdminBanners(),
-    getAdminCollections(),
-  ]);
+  const [contents, banners, ctas] = await Promise.all([getAdminContents(), getAdminBanners(), getAdminCtas()]);
 
-  const fallbackDashboard = {
+  const fallbackDashboard: AdminDashboardData = {
     totalPublishedContents: contents.filter((content) => content.isPublished).length,
-    todayViews: 0,
-    weeklyCtaClicks: 0,
-    popularContents: contents.filter((content) => content.isFeatured).slice(0, 5).map((content) => ({ ...content, score: 0 })),
-    recentContents: contents.slice(0, 5),
-    alerts: banners.length === 0 ? ["현재 노출 중인 배너가 없습니다."] : [`홈 컬렉션 ${collections.length}개가 노출 중입니다.`],
-    dailyViews: Array.from({ length: 7 }, (_, index) => ({
-      date: `${index + 1}일 전`,
+    todayPageViews: 0,
+    totalPageViews: 0,
+    todaySessions: 0,
+    totalSessions: 0,
+    todayContentViews: 0,
+    todayCtaClicks: 0,
+    todayBannerClicks: 0,
+    dailyPageViews: Array.from({ length: 7 }, (_, index) => ({
+      date: `${index + 1}일`,
       value: 0,
     })),
-    gradeInterest: [],
-    ctaRanking: ctas.slice(0, 5).map((cta) => ({ cta, clicks: 0 })),
-    utmRanking: [],
+    topSources: [],
+    topMediums: [],
+    topCampaigns: [],
+    topLandingPages: [],
+    topContents: [],
+    topCtas: [],
+    topBanners: [],
+    recentContents: contents.slice(0, 5),
+    alerts: buildDashboardAlerts(contents, banners, 0),
   };
 
   if (!hasSupabaseEnv()) {
     return fallbackDashboard;
   }
 
-  const events = await getEventsFromSupabase();
-  const todayStart = startOfDay();
-  const weekStart = startOfDaysAgo(6);
-  const todayViews = events.filter(
-    (event) => event.event_type === "content_view" && new Date(event.created_at).getTime() >= todayStart.getTime(),
-  ).length;
-  const weeklyCtaClicks = events.filter(
-    (event) => event.event_type === "cta_click" && new Date(event.created_at).getTime() >= weekStart.getTime(),
-  ).length;
+  const todayStart = getKstStartOfDay();
+  const sevenDaysStart = getKstStartOfDaysAgo(6);
 
-  const contentScore = new Map<string, number>();
-  const gradeScore = new Map<string, number>();
-  const ctaScore = new Map<string, number>();
-  const utmScore = new Map<string, number>();
-  const dailyViewsMap = new Map<string, number>();
+  const [recentEvents, totalPageViews, totalSessionRows] = await Promise.all([
+    getDashboardEventsFromSupabase(sevenDaysStart.toISOString()),
+    getTotalPageViewCountFromSupabase(),
+    getAllPageViewSessionIdsFromSupabase(),
+  ]);
+
+  const todayEvents = recentEvents.filter((event) => new Date(event.created_at).getTime() >= todayStart.getTime());
+  const todaySessionEntries = getTodaySessionEntries(todayEvents);
+
+  const dailyPageViewsMap = new Map<string, number>();
 
   for (let offset = 6; offset >= 0; offset -= 1) {
-    const day = startOfDaysAgo(offset);
-    const key = day.toISOString().slice(0, 10);
-    dailyViewsMap.set(key, 0);
+    const day = getKstStartOfDaysAgo(offset);
+    const key = getKstDateKey(day);
+    dailyPageViewsMap.set(key, 0);
   }
 
-  events.forEach((event) => {
-    const createdAt = new Date(event.created_at);
-    const dayKey = createdAt.toISOString().slice(0, 10);
-
-    if (event.event_type === "content_view" && event.content_id) {
-      contentScore.set(event.content_id, (contentScore.get(event.content_id) ?? 0) + 1);
-      if (event.grade) {
-        gradeScore.set(event.grade, (gradeScore.get(event.grade) ?? 0) + 1);
-      }
+  recentEvents.forEach((event) => {
+    if (event.event_type !== "page_view") {
+      return;
     }
 
-    if (event.event_type === "cta_click" && event.cta_id) {
-      ctaScore.set(event.cta_id, (ctaScore.get(event.cta_id) ?? 0) + 1);
-    }
+    const dayKey = getKstDateKey(new Date(event.created_at));
 
-    if (event.event_type === "page_view") {
-      const label = [event.utm_source, event.utm_campaign].filter(Boolean).join(" / ");
-
-      if (label) {
-        utmScore.set(label, (utmScore.get(label) ?? 0) + 1);
-      }
+    if (dailyPageViewsMap.has(dayKey)) {
+      dailyPageViewsMap.set(dayKey, (dailyPageViewsMap.get(dayKey) ?? 0) + 1);
     }
+  });
 
-    if (event.event_type === "content_view" && dailyViewsMap.has(dayKey)) {
-      dailyViewsMap.set(dayKey, (dailyViewsMap.get(dayKey) ?? 0) + 1);
-    }
+  const todayPageViews = todayEvents.filter((event) => event.event_type === "page_view").length;
+  const todaySessions = todaySessionEntries.length;
+  const totalSessions = new Set(
+    totalSessionRows
+      .map((row) => row.session_id)
+      .filter((sessionId): sessionId is string => Boolean(sessionId)),
+  ).size;
+  const todayContentViews = todayEvents.filter((event) => event.event_type === "content_view").length;
+  const todayCtaClicks = todayEvents.filter((event) => event.event_type === "cta_click").length;
+  const todayBannerClicks = todayEvents.filter((event) => event.event_type === "banner_click").length;
+
+  const topSources = buildTopItems(countBy(todaySessionEntries.map((entry) => entry.utmSource), "direct"), {
+    transformLabel: (key) => key,
+  });
+  const topMediums = buildTopItems(countBy(todaySessionEntries.map((entry) => entry.utmMedium), "none"), {
+    transformLabel: (key) => key,
+  });
+  const topCampaigns = buildTopItems(countBy(todaySessionEntries.map((entry) => entry.utmCampaign), "미지정"), {
+    transformLabel: (key) => key,
+  });
+  const topLandingPages = buildTopItems(countBy(todaySessionEntries.map((entry) => entry.pagePath), "홈"), {
+    transformLabel: (key) => formatLandingPage(key === "홈" ? "/" : key),
+    buildMeta: (key) => (key === "홈" ? "/" : key),
   });
 
   const contentMap = new Map(contents.map((content) => [content.id, content]));
   const ctaMap = new Map(ctas.map((cta) => [cta.id, cta]));
-  const alerts = banners
-    .filter((banner) => banner.endsAt)
-    .map((banner) => {
-      const remainDays = Math.ceil((new Date(banner.endsAt as string).getTime() - Date.now()) / 86400000);
-      return remainDays <= 7 ? `배너 노출 종료가 ${Math.max(remainDays, 0)}일 남았습니다.` : null;
-    })
-    .filter((message): message is string => Boolean(message));
+  const bannerMap = new Map(banners.map((banner) => [banner.id, banner]));
 
-  if (alerts.length === 0 && contents.every((content) => !content.isHero)) {
-    alerts.push("현재 대표 콘텐츠가 지정되어 있지 않습니다.");
-  }
+  const contentCounts = countBy(
+    todayEvents
+      .filter((event) => event.event_type === "content_view")
+      .map((event) => event.content_id),
+    "",
+  );
+  contentCounts.delete("");
+
+  const ctaCounts = countBy(
+    todayEvents
+      .filter((event) => event.event_type === "cta_click")
+      .map((event) => event.cta_id),
+    "",
+  );
+  ctaCounts.delete("");
+
+  const bannerCounts = countBy(
+    todayEvents
+      .filter((event) => event.event_type === "banner_click")
+      .map((event) => event.banner_id),
+    "",
+  );
+  bannerCounts.delete("");
+
+  const topContents = buildTopItems(contentCounts, {
+    limit: 5,
+    transformLabel: (key) => contentMap.get(key)?.title ?? "알 수 없는 콘텐츠",
+    buildMeta: (key) => {
+      const content = contentMap.get(key);
+      return content ? `${content.grade} · ${content.topic}` : undefined;
+    },
+    buildHref: (key) => {
+      const content = contentMap.get(key);
+      return content ? `/contents/${content.slug}` : undefined;
+    },
+  });
+
+  const topCtas = buildTopItems(ctaCounts, {
+    limit: 5,
+    transformLabel: (key) => ctaMap.get(key)?.label ?? "알 수 없는 CTA",
+  });
+
+  const topBanners = buildTopItems(bannerCounts, {
+    limit: 5,
+    transformLabel: (key) => bannerMap.get(key)?.title ?? "알 수 없는 배너",
+  });
 
   return {
     totalPublishedContents: contents.filter((content) => content.isPublished).length,
-    todayViews,
-    weeklyCtaClicks,
-    popularContents: [...contentScore.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .slice(0, 5)
-      .map(([contentId, score]) => ({ ...(contentMap.get(contentId) as ContentItem), score })),
+    todayPageViews,
+    totalPageViews,
+    todaySessions,
+    totalSessions,
+    todayContentViews,
+    todayCtaClicks,
+    todayBannerClicks,
+    dailyPageViews: [...dailyPageViewsMap.entries()].map(([date, value]) => ({
+      date: formatKstMonthDay(new Date(`${date}T00:00:00+09:00`)),
+      value,
+    })),
+    topSources,
+    topMediums,
+    topCampaigns,
+    topLandingPages,
+    topContents,
+    topCtas,
+    topBanners,
     recentContents: contents.slice(0, 5),
-    alerts: alerts.length > 0 ? alerts : ["아직 데이터가 쌓이고 있어요."],
-    dailyViews: [...dailyViewsMap.entries()].map(([date, value]) => ({ date: date.slice(5), value })),
-    gradeInterest: [...gradeScore.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .map(([label, value]) => ({ label, value })),
-    ctaRanking: [...ctaScore.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .slice(0, 5)
-      .map(([ctaId, clicks]) => ({ cta: ctaMap.get(ctaId) as Cta, clicks })),
-    utmRanking: [...utmScore.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .slice(0, 5)
-      .map(([label, visits]) => ({ label, visits })),
+    alerts: buildDashboardAlerts(contents, banners, totalPageViews),
   };
 }
 

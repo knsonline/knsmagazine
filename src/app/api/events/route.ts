@@ -4,7 +4,9 @@ import { hasSupabaseEnv } from "@/lib/supabase/env";
 import type { AnalyticsEventRecord, AnalyticsEventType } from "@/types/analytics";
 
 const allowedEventTypes: AnalyticsEventType[] = [
+  "session_start",
   "page_view",
+  "content_impression",
   "content_view",
   "content_click",
   "cta_click",
@@ -39,6 +41,7 @@ export async function POST(request: Request) {
     utm_source: body.utmSource ?? null,
     utm_medium: body.utmMedium ?? null,
     utm_campaign: body.utmCampaign ?? null,
+    utm_content: body.utmContent ?? null,
     device_type: body.deviceType ?? null,
     created_at: body.timestamp ?? new Date().toISOString(),
   });
