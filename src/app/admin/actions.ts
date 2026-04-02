@@ -6,7 +6,6 @@ import { requireAdminUser } from "@/lib/auth/admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { BANNER_BUCKET, extractBannerStoragePath } from "@/lib/storage/banners";
-import { PRIMARY_GRADES, TOPICS } from "@/constants/taxonomy";
 import { THUMBNAIL_BUCKET } from "@/lib/storage/thumbnails";
 import { getIdSlugPrefix } from "@/lib/utils/slug";
 import { toNullableMultilineText } from "@/lib/utils/text";
@@ -44,8 +43,7 @@ function revalidateMagazine() {
   revalidatePath("/");
   revalidatePath("/contents");
   revalidatePath("/search");
-  PRIMARY_GRADES.forEach((grade) => revalidatePath(`/grades/${grade}`));
-  TOPICS.forEach((topic) => revalidatePath(`/search?topic=${encodeURIComponent(topic)}`));
+  revalidatePath("/grades/[grade]", "page");
 }
 
 function revalidateContentRoutes(id: string) {
