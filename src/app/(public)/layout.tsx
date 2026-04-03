@@ -1,4 +1,3 @@
-import { MobileNav } from "@/components/layout/MobileNav";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { TopPromoBanner } from "@/components/layout/TopPromoBanner";
@@ -16,9 +15,8 @@ export default async function PublicLayout({
     <>
       <TopPromoBanner banner={topBanner} />
       <SiteHeader consultCta={consultCta} />
-      <main className="min-h-[calc(100vh-200px)] pb-20 md:pb-0">{children}</main>
-      <SiteFooter />
-      <MobileNav />
+      <main className="min-h-[calc(100vh-200px)]">{children}</main>
+      <SiteFooter consultCta={consultCta} />
     </>
   );
 }

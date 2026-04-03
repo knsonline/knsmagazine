@@ -12,6 +12,7 @@ import { PlainTextContent } from "@/components/ui/PlainTextContent";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { getContentBySlug, getContextualCta, getRelatedContents } from "@/lib/data/content";
 import { formatKoreanDate } from "@/lib/utils/format";
+import { protectPhraseSpacing } from "@/lib/utils/text";
 
 interface ContentDetailPageProps {
   params: Promise<{
@@ -42,6 +43,10 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
     getContextualCta(content),
   ]);
   const hasBody = content.body.length > 0;
+  const title = protectPhraseSpacing(content.title);
+  const summary = protectPhraseSpacing(content.summary || "상세 설명은 아래 본문에서 확인할 수 있습니다.");
+  const primaryLabel = protectPhraseSpacing(content.contentType === "영상" ? "영상 보기" : "원문 보기");
+  const contextualCtaLabel = protectPhraseSpacing(contextualCta.label);
 
   return (
     <>
@@ -66,7 +71,7 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
               priority
             />
 
-            <div className="space-y-5">
+            <div className="space-y-5 lg:pr-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge>{content.grade}</Badge>
                 <Badge tone="muted">{content.topic}</Badge>
@@ -74,11 +79,11 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
                 <span className="text-sm text-text-secondary">{formatKoreanDate(content.publishedAt)}</span>
               </div>
 
-              <h1 className="text-[34px] font-bold leading-[1.18] tracking-[-0.04em] text-text-primary">
-                {content.title}
+              <h1 className="text-keep text-balance max-w-[16ch] text-[34px] font-bold leading-[1.22] tracking-[-0.04em] text-text-primary lg:max-w-[17ch]">
+                {title}
               </h1>
-              <p className="whitespace-pre-line text-base leading-8 text-text-secondary sm:text-lg">
-                {content.summary || "상세 설명은 아래 본문에서 확인할 수 있습니다."}
+              <p className="text-keep text-pretty max-w-[40rem] whitespace-pre-line text-base leading-[1.8] text-text-secondary sm:text-lg">
+                {summary}
               </p>
 
               <ContentTypeInline contentType={content.contentType} className="text-sm font-semibold text-navy" />
@@ -96,9 +101,9 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
                     externalUrl: content.externalUrl,
                     placement: "content_primary",
                   }}
-                  className="inline-flex min-h-12 items-center rounded-full bg-cta-primary px-6 text-sm font-semibold text-white transition hover:bg-navy-light"
+                  className="text-keep inline-flex min-h-12 max-w-full items-center justify-center rounded-full bg-cta-primary px-6 text-center text-sm font-semibold leading-[1.35] text-white transition hover:bg-navy-light sm:whitespace-nowrap"
                 >
-                  {content.contentType === "영상" ? "영상 보기" : "원문 보기"}
+                  {primaryLabel}
                 </TrackedExternalLink>
 
                 <TrackedExternalLink
@@ -112,9 +117,9 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
                     contentSlug: content.slug,
                     placement: "content_detail_cta",
                   }}
-                  className="inline-flex min-h-12 items-center rounded-full border border-black/10 bg-white px-6 text-sm font-semibold text-text-primary transition hover:border-navy/20 hover:text-navy"
+                  className="text-keep inline-flex min-h-12 max-w-full items-center justify-center rounded-full border border-black/10 bg-white px-6 text-center text-sm font-semibold leading-[1.35] text-text-primary transition hover:border-navy/20 hover:text-navy sm:whitespace-nowrap"
                 >
-                  {contextualCta.label}
+                  {contextualCtaLabel}
                 </TrackedExternalLink>
               </div>
             </div>
@@ -122,7 +127,7 @@ export default async function ContentDetailPage({ params }: ContentDetailPagePro
 
           {hasBody ? (
             <article className="mt-10 rounded-[32px] bg-ivory px-6 py-7 sm:px-8 sm:py-9">
-              <div className="max-w-3xl">
+              <div className="text-reading">
                 <p className="text-sm font-semibold text-text-secondary">상세 설명</p>
                 <PlainTextContent
                   text={content.body}

@@ -25,7 +25,7 @@ export function CollectionSection({
         />
 
         {lead ? (
-          <div className="grid gap-5 lg:grid-cols-[1.6fr_minmax(0,1fr)] lg:items-start">
+          <div className="grid gap-5 lg:grid-cols-[1.45fr_minmax(0,1fr)] lg:items-start xl:grid-cols-[1.55fr_minmax(0,1fr)]">
             <div className="min-w-0">
               <ContentCard content={lead} />
             </div>

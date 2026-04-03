@@ -37,7 +37,7 @@ const THUMBNAIL_GUIDE_COPY = {
 const CONTENT_FIELD_GUIDE = [
   "제목: 홈과 카드에서 먼저 눈에 띄는 짧고 강한 한 줄",
   "요약: 카드 소개와 상세 상단 설명에 들어가는 1~3문장",
-  "본문: 상세 페이지에서 읽히는 설명형 텍스트",
+  "본문(선택): 필요한 경우에만 여는 상세 설명 텍스트",
 ];
 
 function SubmitButton({ hasContent, disabled }: { hasContent: boolean; disabled: boolean }) {
@@ -60,6 +60,7 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
   const [titlePreview, setTitlePreview] = useState(content?.title ?? "");
   const [summaryPreview, setSummaryPreview] = useState(content?.summary ?? "");
   const [bodyPreview, setBodyPreview] = useState(content?.body ?? "");
+  const [isBodySectionOpen, setIsBodySectionOpen] = useState(Boolean(content?.body.trim()));
 
   const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
     setTitlePreview(event.target.value);
@@ -129,27 +130,58 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-text-primary" htmlFor="body">
-            본문
-          </label>
-          <p className="text-sm text-text-secondary">
-            긴 설명형 텍스트를 입력하는 영역입니다. Enter 줄바꿈과 빈 줄이 상세 페이지에서도 그대로 보존됩니다.
-          </p>
-          <textarea
-            id="body"
-            name="body"
-            rows={16}
-            value={bodyPreview}
-            onChange={handleBodyChange}
-            className="min-h-[360px] w-full resize-y rounded-3xl border border-black/10 bg-ivory px-4 py-4 text-base leading-8 outline-none"
-            placeholder={"예시)\n입시 변화 포인트를 먼저 정리해 주세요.\n\n학부모가 바로 이해할 수 있는 설명을 문단별로 나누어 작성하면 읽기 편합니다."}
-          />
-        </div>
+      <details
+        open={isBodySectionOpen}
+        onToggle={(event) => setIsBodySectionOpen(event.currentTarget.open)}
+        className="rounded-[28px] border border-black/8 bg-white"
+      >
+        <summary className="list-none cursor-pointer px-5 py-5 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-base font-semibold text-text-primary">상세 설명 추가</p>
+                <span className="rounded-full bg-ivory-warm px-3 py-1 text-xs font-semibold text-text-secondary">
+                  선택 입력
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-text-secondary">
+                body는 꼭 입력하지 않아도 됩니다. 필요한 콘텐츠만 열어서 자세한 설명을 추가해 주세요.
+              </p>
+            </div>
+            <span className="inline-flex min-h-11 items-center rounded-full border border-black/10 px-4 text-sm font-semibold text-text-primary">
+              {isBodySectionOpen ? "상세 설명 접기" : "상세 설명 열기"}
+            </span>
+          </div>
+        </summary>
 
-        <ContentDetailPreview title={titlePreview} summary={summaryPreview} body={bodyPreview} />
-      </div>
+        <div className="border-t border-black/6 px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
+          <div className="mb-4 rounded-2xl bg-ivory px-4 py-4 text-sm text-text-secondary">
+            <p className="font-semibold text-text-primary">본문 입력 안내</p>
+            <p className="mt-2">
+              요약만으로 충분한 콘텐츠는 비워 두셔도 됩니다. 본문이 필요할 때만 긴 설명을 추가하면 상세 페이지에서 줄바꿈까지 그대로 보존됩니다.
+            </p>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-text-primary" htmlFor="body">
+                본문
+              </label>
+              <textarea
+                id="body"
+                name="body"
+                rows={16}
+                value={bodyPreview}
+                onChange={handleBodyChange}
+                className="min-h-[360px] w-full resize-y rounded-3xl border border-black/10 bg-ivory px-4 py-4 text-base leading-8 outline-none"
+                placeholder={"예시)\n입시 변화 포인트를 먼저 정리해 주세요.\n\n학부모가 바로 이해할 수 있는 설명을 문단별로 나누어 작성하면 읽기 편합니다."}
+              />
+            </div>
+
+            <ContentDetailPreview title={titlePreview} summary={summaryPreview} body={bodyPreview} />
+          </div>
+        </div>
+      </details>
 
       <ImageUploader
         initialUrl={content?.thumbnailUrlRaw}

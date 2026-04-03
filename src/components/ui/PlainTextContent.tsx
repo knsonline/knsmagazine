@@ -26,7 +26,10 @@ export function PlainTextContent({
   return (
     <div className={joinClassNames("space-y-5", className)}>
       {paragraphs.map((paragraph, index) => (
-        <p key={`${index}-${paragraph.slice(0, 24)}`} className={joinClassNames("whitespace-pre-line", paragraphClassName)}>
+        <p
+          key={`${index}-${paragraph.slice(0, 24)}`}
+          className={joinClassNames("text-keep text-pretty whitespace-pre-line", paragraphClassName)}
+        >
           {paragraph}
         </p>
       ))}

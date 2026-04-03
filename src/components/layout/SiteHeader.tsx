@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { TrackedExternalLink } from "@/components/analytics/TrackedExternalLink";
 import { TrackedInternalLink } from "@/components/analytics/TrackedInternalLink";
 import { SITE_NAME } from "@/constants/site";
@@ -58,12 +62,32 @@ function TopicMenuItem({ topic }: { topic: Topic }) {
   );
 }
 
-export function SiteHeader({ consultCta }: SiteHeaderProps) {
+function MenuIcon({ open }: { open: boolean }) {
   return (
-    <header className="sticky top-11 z-30 border-b border-black/6 bg-white/95 backdrop-blur-md">
+    <span className="relative h-4 w-5">
+      <span
+        className={`absolute left-0 top-0 h-[1.5px] w-5 rounded-full bg-current transition ${open ? "translate-y-[7px] rotate-45" : ""}`}
+      />
+      <span
+        className={`absolute left-0 top-[7px] h-[1.5px] w-5 rounded-full bg-current transition ${open ? "opacity-0" : ""}`}
+      />
+      <span
+        className={`absolute left-0 top-[14px] h-[1.5px] w-5 rounded-full bg-current transition ${open ? "-translate-y-[7px] -rotate-45" : ""}`}
+      />
+    </span>
+  );
+}
+
+export function SiteHeader({ consultCta }: SiteHeaderProps) {
+  const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  return (
+    <header className="sticky top-0 z-30 border-b border-black/6 bg-white/95 backdrop-blur-md">
       <div className="shell">
-        <div className="flex min-h-[76px] items-center justify-between gap-6">
-          <Link href="/" className="flex shrink-0 flex-col">
+        <div className="flex min-h-[64px] items-center justify-between gap-4 lg:min-h-[76px] lg:gap-6">
+          <Link href="/" className="flex min-w-0 shrink-0 flex-col">
             <span className="text-lg font-bold tracking-[-0.03em] text-navy">{SITE_NAME}</span>
             <span className="hidden text-xs text-text-secondary sm:block">교육 입시 큐레이션</span>
           </Link>
@@ -97,7 +121,7 @@ export function SiteHeader({ consultCta }: SiteHeaderProps) {
             </DesktopMenu>
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 lg:flex">
             <Link
               href="/search"
               className="inline-flex min-h-11 items-center rounded-full border border-black/10 px-4 text-sm font-semibold text-text-primary transition hover:border-navy/20 hover:text-navy"
@@ -108,7 +132,7 @@ export function SiteHeader({ consultCta }: SiteHeaderProps) {
               href={consultCta.url}
               event={{
                 eventType: "cta_click",
-                pagePath: "/",
+                pagePath: pathname,
                 ctaId: consultCta.id,
                 ctaLabel: consultCta.label,
                 placement: "site_header",
@@ -118,39 +142,94 @@ export function SiteHeader({ consultCta }: SiteHeaderProps) {
               상담 신청
             </TrackedExternalLink>
           </div>
+
+          <button
+            type="button"
+            aria-expanded={isMobileMenuOpen}
+            aria-label={isMobileMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
+            onClick={() => setIsMobileMenuOpen((current) => !current)}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-black/10 text-text-primary transition hover:border-navy/20 hover:text-navy lg:hidden"
+          >
+            <MenuIcon open={isMobileMenuOpen} />
+          </button>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-3 lg:hidden">
-          <Link
-            href="/contents"
-            className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-ivory-warm px-4 text-sm font-semibold text-text-primary"
-          >
-            전체 콘텐츠
-          </Link>
-          {PRIMARY_GRADES.map((grade) => (
-            <TrackedInternalLink
-              key={grade}
-              href={`/grades/${encodeURIComponent(grade)}`}
-              event={{
-                eventType: "grade_select",
-                pagePath: `/grades/${grade}`,
-                grade,
-              }}
-              className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-ivory-warm px-4 text-sm font-semibold text-text-primary"
-            >
-              {grade}
-            </TrackedInternalLink>
-          ))}
-          {TOPICS.slice(0, 3).map((topic) => (
-            <Link
-              key={topic}
-              href={`/search?topic=${encodeURIComponent(topic)}`}
-              className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-ivory-warm px-4 text-sm font-semibold text-text-primary"
-            >
-              {topic}
-            </Link>
-          ))}
-        </div>
+        {isMobileMenuOpen ? (
+          <div className="border-t border-black/6 pb-4 pt-4 lg:hidden">
+            <div className="space-y-4">
+              <div className="grid gap-2">
+                <Link
+                  href="/contents"
+                  onClick={closeMobileMenu}
+                  className="flex min-h-14 items-center justify-between rounded-2xl bg-ivory px-4 text-sm font-semibold text-text-primary"
+                >
+                  <span>전체 콘텐츠</span>
+                  <span className="text-text-secondary">→</span>
+                </Link>
+                <Link
+                  href="/search"
+                  onClick={closeMobileMenu}
+                  className="flex min-h-14 items-center justify-between rounded-2xl bg-ivory px-4 text-sm font-semibold text-text-primary"
+                >
+                  <span>검색</span>
+                  <span className="text-text-secondary">→</span>
+                </Link>
+                <TrackedExternalLink
+                  href={consultCta.url}
+                  event={{
+                    eventType: "cta_click",
+                    pagePath: pathname,
+                    ctaId: consultCta.id,
+                    ctaLabel: consultCta.label,
+                    placement: "mobile_header_menu",
+                  }}
+                  onClick={closeMobileMenu}
+                  className="flex min-h-14 items-center justify-between rounded-2xl bg-cta-primary px-4 text-sm font-semibold text-white"
+                >
+                  <span>상담 신청</span>
+                  <span className="text-white/72">→</span>
+                </TrackedExternalLink>
+              </div>
+
+              <div className="rounded-[24px] bg-ivory p-4">
+                <p className="text-sm font-semibold text-text-primary">학년별 모아보기</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {PRIMARY_GRADES.map((grade) => (
+                    <TrackedInternalLink
+                      key={grade}
+                      href={`/grades/${encodeURIComponent(grade)}`}
+                      event={{
+                        eventType: "grade_select",
+                        pagePath: `/grades/${grade}`,
+                        grade,
+                      }}
+                      onClick={closeMobileMenu}
+                      className="flex min-h-12 items-center justify-center rounded-2xl bg-white px-4 text-sm font-semibold text-text-primary"
+                    >
+                      {grade}
+                    </TrackedInternalLink>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[24px] bg-ivory p-4">
+                <p className="text-sm font-semibold text-text-primary">주제별 보기</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {TOPICS.map((topic) => (
+                    <Link
+                      key={topic}
+                      href={`/search?topic=${encodeURIComponent(topic)}`}
+                      onClick={closeMobileMenu}
+                      className="flex min-h-12 items-center justify-center rounded-2xl bg-white px-4 text-sm font-semibold text-text-primary"
+                    >
+                      {topic}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </header>
   );

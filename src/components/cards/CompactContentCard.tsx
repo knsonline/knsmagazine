@@ -39,10 +39,12 @@ export function CompactContentCard({ content }: CompactContentCardProps) {
         ) : null}
 
         <div className="min-w-0 space-y-2">
-          <h3 className="line-clamp-2 text-[17px] font-semibold leading-7 tracking-[-0.02em] text-text-primary">
+          <h3 className="text-keep text-balance line-clamp-2 text-[17px] font-semibold leading-[1.55] tracking-[-0.02em] text-text-primary">
             {content.title}
           </h3>
-          {description ? <p className="line-clamp-2 text-sm leading-6 text-text-secondary">{description}</p> : null}
+          {description ? (
+            <p className="text-keep text-pretty line-clamp-2 text-sm leading-[1.65] text-text-secondary">{description}</p>
+          ) : null}
         </div>
 
         <ContentTypeInline contentType={content.contentType} className="text-sm font-semibold text-navy" />

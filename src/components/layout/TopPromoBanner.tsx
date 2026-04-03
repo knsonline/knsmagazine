@@ -15,7 +15,7 @@ export function TopPromoBanner({ banner }: TopPromoBannerProps) {
     : "KNS 설명회 일정 확인하기";
 
   return (
-    <div className="sticky top-0 z-40 bg-[#111111] text-white">
+    <div className="bg-[#111111] text-white">
       <div className="shell">
         <TrackedExternalLink
           href={banner.linkUrl}
@@ -25,7 +25,7 @@ export function TopPromoBanner({ banner }: TopPromoBannerProps) {
             bannerId: banner.id,
             placement: "top_promo_banner",
           }}
-          className="flex min-h-11 items-center justify-center py-2 text-center text-sm font-semibold tracking-[-0.01em]"
+          className="text-keep flex min-h-10 items-center justify-center py-2 text-center text-sm font-semibold tracking-[-0.01em] sm:min-h-11"
         >
           <span>안내: {displayTitle} →</span>
         </TrackedExternalLink>

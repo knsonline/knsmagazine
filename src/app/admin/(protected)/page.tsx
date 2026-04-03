@@ -1,3 +1,4 @@
+import { AdminDailyMetricsTable } from "@/components/admin/AdminDailyMetricsTable";
 import { AdminLineChart } from "@/components/admin/AdminLineChart";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminSummaryList } from "@/components/admin/AdminSummaryList";
@@ -6,7 +7,15 @@ import { getAdminDashboardData } from "@/lib/data/admin";
 
 const numberFormatter = new Intl.NumberFormat("ko-KR");
 
-export default async function AdminDashboardPage() {
+interface AdminDashboardPageProps {
+  searchParams?: Promise<{
+    range?: string;
+  }>;
+}
+
+export default async function AdminDashboardPage({ searchParams }: AdminDashboardPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const selectedDays: 7 | 30 = resolvedSearchParams?.range === "30" ? 30 : 7;
   const dashboard = await getAdminDashboardData();
 
   const stats = [
@@ -68,6 +77,7 @@ export default async function AdminDashboardPage() {
         <div className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">
           <p>모든 수치는 한국 시간(KST) 기준으로 보여드립니다.</p>
           <p>오늘은 한국 시간 00:00부터 현재 시점까지 쌓인 값이며, 방문 세션은 현재 구조에서 세션 기준 방문 수를 뜻합니다.</p>
+          <p>상단 KPI 카드는 오늘 기준을 유지하고, 콘텐츠·CTA·배너 랭킹은 최근 7일 누적 반응 기준으로 보여드립니다.</p>
           <p>관리자 브라우저는 기본적으로 통계에서 제외되지만, 외부 테스트 접속이나 허용한 테스트 브라우저는 일부 포함될 수 있습니다.</p>
         </div>
       </div>
@@ -85,6 +95,10 @@ export default async function AdminDashboardPage() {
       </div>
 
       <AdminLineChart items={dashboard.dailyPageViews} />
+      <AdminDailyMetricsTable
+        items={selectedDays === 30 ? dashboard.dailyMetrics30 : dashboard.dailyMetrics7}
+        selectedDays={selectedDays}
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <AdminSummaryList
@@ -93,6 +107,7 @@ export default async function AdminDashboardPage() {
           items={dashboard.topSources}
           emptyTitle="아직 오늘 유입 source 데이터가 없어요."
           emptyDescription="session_start가 쌓이면 출처별 요약이 여기에 보입니다."
+          valueLabel="오늘"
         />
         <AdminSummaryList
           title="오늘 유입 medium TOP"
@@ -100,6 +115,7 @@ export default async function AdminDashboardPage() {
           items={dashboard.topMediums}
           emptyTitle="아직 오늘 유입 medium 데이터가 없어요."
           emptyDescription="세션이 쌓이면 어떤 방식으로 들어왔는지 볼 수 있습니다."
+          valueLabel="오늘"
         />
       </div>
 
@@ -110,6 +126,7 @@ export default async function AdminDashboardPage() {
           items={dashboard.topCampaigns}
           emptyTitle="오늘 campaign 데이터가 아직 없어요."
           emptyDescription="UTM이 붙은 외부 유입이 들어오면 캠페인 이름이 집계됩니다."
+          valueLabel="오늘"
         />
         <AdminSummaryList
           title="오늘 랜딩 페이지 TOP"
@@ -117,30 +134,34 @@ export default async function AdminDashboardPage() {
           items={dashboard.topLandingPages}
           emptyTitle="오늘 랜딩 페이지 데이터가 아직 없어요."
           emptyDescription="session_start가 쌓이면 방문 입구 페이지가 여기에 보입니다."
+          valueLabel="오늘"
         />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
         <AdminSummaryList
-          title="오늘 많이 본 콘텐츠 TOP"
-          description="오늘 상세 페이지 진입이 많았던 콘텐츠입니다. 카드 노출이 아니라 상세 조회 기준입니다."
+          title="최근 7일 많이 본 콘텐츠 TOP"
+          description="최근 7일 content_view 기준입니다. 오래된 누적 조회보다 지금 반응하는 콘텐츠를 먼저 봅니다."
           items={dashboard.topContents}
-          emptyTitle="오늘 많이 본 콘텐츠가 아직 없어요."
-          emptyDescription="content_view가 쌓이면 반응이 높은 콘텐츠를 바로 볼 수 있습니다."
+          emptyTitle="최근 7일 많이 본 콘텐츠가 아직 없어요."
+          emptyDescription="최근 7일 content_view가 쌓이면 반응이 높은 콘텐츠를 바로 볼 수 있습니다."
+          valueLabel="최근 7일"
         />
         <AdminSummaryList
-          title="오늘 클릭 많은 CTA TOP"
-          description="오늘 가장 많이 눌린 CTA 문구입니다."
+          title="최근 7일 클릭 많은 CTA TOP"
+          description="최근 7일 CTA 클릭 기준입니다. 오늘 편차보다 한 주 흐름을 더 안정적으로 보여줍니다."
           items={dashboard.topCtas}
-          emptyTitle="오늘 CTA 클릭이 아직 없어요."
-          emptyDescription="CTA 클릭이 생기면 어떤 문구가 반응을 얻는지 볼 수 있습니다."
+          emptyTitle="최근 7일 CTA 클릭이 아직 없어요."
+          emptyDescription="최근 7일 CTA 클릭이 생기면 어떤 문구가 반응을 얻는지 볼 수 있습니다."
+          valueLabel="최근 7일"
         />
         <AdminSummaryList
-          title="오늘 클릭 많은 배너 TOP"
-          description="오늘 반응이 있었던 배너를 간단히 정리한 표입니다."
+          title="최근 7일 클릭 많은 배너 TOP"
+          description="최근 7일 배너 클릭 기준입니다. 단기 변동보다 실제 운영 반응을 보기 쉽게 정리했습니다."
           items={dashboard.topBanners}
-          emptyTitle="오늘 배너 클릭이 아직 없어요."
-          emptyDescription="배너 클릭이 쌓이면 어떤 배너가 반응을 얻는지 여기에 보입니다."
+          emptyTitle="최근 7일 배너 클릭이 아직 없어요."
+          emptyDescription="최근 7일 배너 클릭이 쌓이면 어떤 배너가 반응을 얻는지 여기에 보입니다."
+          valueLabel="최근 7일"
         />
       </div>
 
@@ -175,6 +196,7 @@ export default async function AdminDashboardPage() {
             <p>방문 세션은 현재 구조에서 브라우저 쿠키 기준 방문 수입니다. 정확한 사람 수와 완전히 같지는 않습니다.</p>
             <p>페이지뷰는 페이지가 열릴 때마다 쌓이고, 콘텐츠 상세 조회는 상세 페이지 진입만 따로 셉니다.</p>
             <p>유입 source, medium, campaign, 랜딩 페이지는 오늘 세션의 첫 진입 기준으로 요약합니다.</p>
+            <p>콘텐츠·CTA·배너 랭킹은 최근 7일 반응 기준으로 보여 주어 하루치 편차와 누적 고착을 함께 줄였습니다.</p>
             <p>운영 문서는 <span className="font-semibold text-text-primary">docs/utm-operation-guide.md</span>에 정리해 두었습니다.</p>
           </div>
         </div>

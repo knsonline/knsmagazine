@@ -1,6 +1,7 @@
 import { TrackedExternalLink } from "@/components/analytics/TrackedExternalLink";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MagazineImage } from "@/components/ui/MagazineImage";
+import { protectPhraseSpacing } from "@/lib/utils/text";
 import type { BannerItem } from "@/types/content";
 
 interface EventBannerSectionProps {
@@ -25,6 +26,7 @@ export function EventBannerSection({ banners }: EventBannerSectionProps) {
             const displayTitle = banner.startsAt
               ? `${new Date(banner.startsAt).getFullYear()} 설명회 일정 확인하기`
               : "KNS 설명회 일정 확인하기";
+            const protectedTitle = protectPhraseSpacing(displayTitle);
 
             return (
               <TrackedExternalLink
@@ -47,10 +49,10 @@ export function EventBannerSection({ banners }: EventBannerSectionProps) {
                   />
                 </div>
                 <div className="p-6">
-                  <p className="text-2xl font-semibold tracking-[-0.03em] text-text-primary">
-                    {displayTitle}
+                  <p className="text-keep text-balance max-w-[16ch] text-2xl font-semibold leading-[1.35] tracking-[-0.03em] text-text-primary">
+                    {protectedTitle}
                   </p>
-                  <p className="mt-3 text-sm text-text-secondary">
+                  <p className="text-keep text-pretty mt-3 text-sm leading-[1.7] text-text-secondary">
                     배너를 눌러 자세한 안내를 확인해 보세요.
                   </p>
                 </div>

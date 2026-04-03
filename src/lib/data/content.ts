@@ -2,7 +2,7 @@ import seedData from "../../../seed-data.json";
 import { LATEST_PAGE_SIZE } from "@/constants/site";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getPlaceholderImage } from "@/lib/utils/format";
+import { getKstStartOfDaysAgo, getPlaceholderImage } from "@/lib/utils/format";
 import { getIdSlugPrefix } from "@/lib/utils/slug";
 import { normalizeMultilineText } from "@/lib/utils/text";
 import type { ContentType, Grade, Topic, BannerItem, CollectionItem, ContentItem, Cta } from "@/types/content";
@@ -197,15 +197,32 @@ async function getEventRows() {
   return (data ?? []) as Pick<EventRow, "content_id" | "event_type" | "created_at">[];
 }
 
-function applyViewCounts(rows: ContentRow[], events: Pick<EventRow, "content_id" | "event_type">[]): ContentItem[] {
+function buildContentViewCountMap(
+  events: Pick<EventRow, "content_id" | "event_type" | "created_at">[],
+  fromDate?: Date,
+) {
   const counts = new Map<string, number>();
 
   events
-    .filter((event) => event.event_type === "content_view" && event.content_id)
+    .filter(
+      (event) =>
+        event.event_type === "content_view" &&
+        event.content_id &&
+        (!fromDate || new Date(event.created_at).getTime() >= fromDate.getTime()),
+    )
     .forEach((event) => {
       const key = event.content_id as string;
       counts.set(key, (counts.get(key) ?? 0) + 1);
     });
+
+  return counts;
+}
+
+function applyViewCounts(
+  rows: ContentRow[],
+  events: Pick<EventRow, "content_id" | "event_type" | "created_at">[],
+): ContentItem[] {
+  const counts = buildContentViewCountMap(events);
 
   return rows.map((row) => mapContentRow(row, counts.get(row.id) ?? 0));
 }
@@ -274,16 +291,41 @@ export async function getHeroContent(): Promise<ContentItem | undefined> {
 }
 
 export async function getTrendingContents(limit = 5): Promise<ContentItem[]> {
-  const contents = await getPublishedContents();
-  const ranked = [...contents]
-    .filter((content) => content.viewCount > 0)
-    .sort((left, right) => right.viewCount - left.viewCount);
+  if (!hasSupabaseEnv()) {
+    const contents = await getPublishedContents();
 
-  if (ranked.length >= limit) {
-    return ranked.slice(0, limit);
+    return [...contents]
+      .sort(
+        (left, right) =>
+          right.viewCount - left.viewCount ||
+          new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime(),
+      )
+      .slice(0, limit);
   }
 
-  return contents.filter((content) => content.isFeatured).slice(0, limit);
+  const [rows, events] = await Promise.all([getPublishedContentRows(), getEventRows()]);
+  const contents = applyViewCounts(rows, events);
+  const recentViewCounts = buildContentViewCountMap(events, getKstStartOfDaysAgo(6));
+
+  const rankedByRecentViews = [...contents]
+    .filter((content) => (recentViewCounts.get(content.id) ?? 0) > 0)
+    .sort(
+      (left, right) =>
+        (recentViewCounts.get(right.id) ?? 0) - (recentViewCounts.get(left.id) ?? 0) ||
+        new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime(),
+    );
+
+  if (rankedByRecentViews.length >= limit) {
+    return rankedByRecentViews.slice(0, limit);
+  }
+
+  const rankedIds = new Set(rankedByRecentViews.map((content) => content.id));
+  const featuredFallback = contents
+    .filter((content) => content.isFeatured && !rankedIds.has(content.id))
+    .sort((left, right) => new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime())
+    .slice(0, limit - rankedByRecentViews.length);
+
+  return [...rankedByRecentViews, ...featuredFallback];
 }
 
 export async function getLatestContents(page = 1, pageSize = LATEST_PAGE_SIZE) {

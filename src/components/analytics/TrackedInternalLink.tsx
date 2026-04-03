@@ -9,6 +9,7 @@ interface TrackedInternalLinkProps {
   className?: string;
   event: AnalyticsEventPayload;
   children: React.ReactNode;
+  onClick?: () => void;
 }
 
 export function TrackedInternalLink({
@@ -16,6 +17,7 @@ export function TrackedInternalLink({
   className,
   event,
   children,
+  onClick,
 }: TrackedInternalLinkProps) {
   return (
     <Link
@@ -23,6 +25,7 @@ export function TrackedInternalLink({
       className={className}
       onClick={() => {
         trackEvent(event);
+        onClick?.();
       }}
     >
       {children}

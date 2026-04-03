@@ -13,6 +13,7 @@ interface AdminSummaryListProps {
   items: AdminSummaryListItem[];
   emptyTitle: string;
   emptyDescription: string;
+  valueLabel?: string;
 }
 
 export function AdminSummaryList({
@@ -21,6 +22,7 @@ export function AdminSummaryList({
   items,
   emptyTitle,
   emptyDescription,
+  valueLabel = "수치",
 }: AdminSummaryListProps) {
   return (
     <div className="card-surface p-5">
@@ -32,7 +34,7 @@ export function AdminSummaryList({
           <div className="grid grid-cols-[56px_minmax(0,1fr)_88px] bg-ivory px-4 py-3 text-xs font-semibold text-text-secondary">
             <span>순위</span>
             <span>항목</span>
-            <span className="text-right">오늘</span>
+            <span className="text-right">{valueLabel}</span>
           </div>
           <div className="divide-y divide-black/6">
             {items.map((item, index) => {

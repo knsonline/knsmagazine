@@ -39,13 +39,10 @@ export default async function GradePage({ params }: GradePageProps) {
       <EventLogger eventType="page_view" pagePath={`/grades/${grade}`} grade={grade} />
       <section className="section-space bg-white">
         <div className="shell">
-          <SectionHeader
-            title={`${grade} 콘텐츠`}
-            description={`${grade} 학부모님이 가장 많이 찾는 영어 학습 콘텐츠를 모아 보았습니다.`}
-          />
+          <SectionHeader title={`${grade} 콘텐츠`} />
 
           {items.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {items.map((content) => (
                 <ContentListCard key={content.id} content={content} />
               ))}

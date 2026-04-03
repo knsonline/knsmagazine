@@ -29,6 +29,22 @@ export function formatKstMonthDay(date = new Date()): string {
   return formatter.format(date).replace(". ", "/").replace(".", "");
 }
 
+export function formatKstMonthDayWithWeekday(date = new Date()): string {
+  const formatter = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: KST_TIMEZONE,
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  });
+
+  const parts = formatter.formatToParts(date);
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+  const weekday = parts.find((part) => part.type === "weekday")?.value ?? "";
+
+  return `${month}/${day} (${weekday})`;
+}
+
 export function getKstStartOfDay(date = new Date()): Date {
   const dateKey = getKstDateKey(date);
   return new Date(`${dateKey}T00:00:00+09:00`);

@@ -10,6 +10,7 @@ interface TrackedExternalLinkProps {
   className?: string;
   event: AnalyticsEventPayload;
   children: React.ReactNode;
+  onClick?: () => void;
 }
 
 export function TrackedExternalLink({
@@ -17,6 +18,7 @@ export function TrackedExternalLink({
   className,
   event,
   children,
+  onClick,
 }: TrackedExternalLinkProps) {
   const trackedHref = useMemo(
     () =>
@@ -38,6 +40,7 @@ export function TrackedExternalLink({
       className={className}
       onClick={() => {
         trackEvent(event);
+        onClick?.();
       }}
     >
       {children}

@@ -9,6 +9,8 @@ import { SITE_NAME } from "@/constants/site";
 import { getLatestContents, getPrimaryConsultCta } from "@/lib/data/content";
 import { clampPage } from "@/lib/utils/format";
 
+const CONTENTS_OVERVIEW_PAGE_SIZE = 12;
+
 export const metadata: Metadata = {
   title: "전체 콘텐츠",
   description: `${SITE_NAME}의 최신 콘텐츠 목록입니다.`,
@@ -22,10 +24,10 @@ interface ContentsPageProps {
 
 export default async function ContentsPage({ searchParams }: ContentsPageProps) {
   const resolvedSearchParams = await searchParams;
-  const preview = await getLatestContents(1);
+  const preview = await getLatestContents(1, CONTENTS_OVERVIEW_PAGE_SIZE);
   const currentPage = clampPage(resolvedSearchParams.page, preview.totalPages);
   const [{ items, totalPages }, consultCta] = await Promise.all([
-    getLatestContents(currentPage),
+    getLatestContents(currentPage, CONTENTS_OVERVIEW_PAGE_SIZE),
     getPrimaryConsultCta(),
   ]);
 
@@ -34,13 +36,10 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
       <EventLogger eventType="page_view" pagePath="/contents" />
       <section className="section-space bg-white">
         <div className="shell">
-          <SectionHeader
-            title="전체 콘텐츠"
-            description="학년과 주제를 넘나들며 필요한 콘텐츠를 차분하게 탐색해 보세요."
-          />
+          <SectionHeader title="전체 콘텐츠" />
 
           {items.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {items.map((content) => (
                 <ContentListCard key={content.id} content={content} />
               ))}

@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getActiveBanners, getCtas, getHomeCollections, getPublishedContents } from "@/lib/data/content";
 import {
   formatKstMonthDay,
+  formatKstMonthDayWithWeekday,
   getKstDateKey,
   getKstStartOfDay,
   getKstStartOfDaysAgo,
@@ -30,6 +31,8 @@ export interface AdminDashboardData {
   todayCtaClicks: number;
   todayBannerClicks: number;
   dailyPageViews: Array<{ date: string; value: number }>;
+  dailyMetrics7: AdminDailyMetricRow[];
+  dailyMetrics30: AdminDailyMetricRow[];
   topSources: AdminSummaryItem[];
   topMediums: AdminSummaryItem[];
   topCampaigns: AdminSummaryItem[];
@@ -39,6 +42,20 @@ export interface AdminDashboardData {
   topBanners: AdminSummaryItem[];
   recentContents: ContentItem[];
   alerts: string[];
+}
+
+export interface AdminContentListItem extends ContentItem {
+  recentContentViews: number;
+}
+
+export interface AdminDailyMetricRow {
+  dateKey: string;
+  dateLabel: string;
+  pageViews: number;
+  sessions: number;
+  contentViews: number;
+  ctaClicks: number;
+  bannerClicks: number;
 }
 
 type DashboardEventRow = Pick<
@@ -201,6 +218,127 @@ function countBy(values: Array<string | null | undefined>, fallbackLabel = "미�
   return counts;
 }
 
+function buildEventCounts(
+  events: DashboardEventRow[],
+  eventType: DashboardEventRow["event_type"],
+  field: "content_id" | "cta_id" | "banner_id",
+) {
+  const counts = countBy(
+    events.filter((event) => event.event_type === eventType).map((event) => event[field]),
+    "",
+  );
+
+  counts.delete("");
+  return counts;
+}
+
+function buildEmptyDailyMetrics(days: number): AdminDailyMetricRow[] {
+  return Array.from({ length: days }, (_, index) => {
+    const date = getKstStartOfDaysAgo(days - index - 1);
+
+    return {
+      dateKey: getKstDateKey(date),
+      dateLabel: formatKstMonthDayWithWeekday(date),
+      pageViews: 0,
+      sessions: 0,
+      contentViews: 0,
+      ctaClicks: 0,
+      bannerClicks: 0,
+    };
+  });
+}
+
+function buildDailyMetricRows(events: DashboardEventRow[], days: number): AdminDailyMetricRow[] {
+  const metricMap = new Map<
+    string,
+    Omit<AdminDailyMetricRow, "sessions"> & {
+      sessions: Set<string>;
+    }
+  >();
+
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const date = getKstStartOfDaysAgo(offset);
+    const dateKey = getKstDateKey(date);
+
+    metricMap.set(dateKey, {
+      dateKey,
+      dateLabel: formatKstMonthDayWithWeekday(date),
+      pageViews: 0,
+      sessions: new Set<string>(),
+      contentViews: 0,
+      ctaClicks: 0,
+      bannerClicks: 0,
+    });
+  }
+
+  events.forEach((event) => {
+    const dateKey = getKstDateKey(new Date(event.created_at));
+    const target = metricMap.get(dateKey);
+
+    if (!target) {
+      return;
+    }
+
+    if (event.session_id) {
+      target.sessions.add(event.session_id);
+    }
+
+    if (event.event_type === "page_view") {
+      target.pageViews += 1;
+    }
+
+    if (event.event_type === "content_view") {
+      target.contentViews += 1;
+    }
+
+    if (event.event_type === "cta_click") {
+      target.ctaClicks += 1;
+    }
+
+    if (event.event_type === "banner_click") {
+      target.bannerClicks += 1;
+    }
+  });
+
+  return [...metricMap.values()].map((item) => ({
+    dateKey: item.dateKey,
+    dateLabel: item.dateLabel,
+    pageViews: item.pageViews,
+    sessions: item.sessions.size,
+    contentViews: item.contentViews,
+    ctaClicks: item.ctaClicks,
+    bannerClicks: item.bannerClicks,
+  }));
+}
+
+function escapeCsvCell(value: string | number): string {
+  const serialized = String(value);
+
+  if (serialized.includes(",") || serialized.includes('"') || serialized.includes("\n")) {
+    return `"${serialized.replaceAll('"', '""')}"`;
+  }
+
+  return serialized;
+}
+
+export function buildAdminDailyMetricsCsv(rows: AdminDailyMetricRow[]): string {
+  const header = ["날짜", "페이지뷰", "방문 세션", "콘텐츠 상세조회", "CTA 클릭", "배너 클릭"];
+  const lines = rows.map((row) =>
+    [
+      row.dateKey,
+      row.pageViews,
+      row.sessions,
+      row.contentViews,
+      row.ctaClicks,
+      row.bannerClicks,
+    ]
+      .map((cell) => escapeCsvCell(cell))
+      .join(","),
+  );
+
+  return `\uFEFF${header.join(",")}\n${lines.join("\n")}`;
+}
+
 function getTodaySessionEntries(events: DashboardEventRow[]): SessionEntry[] {
   const sorted = [...events].sort(
     (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime(),
@@ -341,14 +479,37 @@ async function getAllPageViewSessionIdsFromSupabase() {
   return (data ?? []) as Array<{ session_id: string | null }>;
 }
 
-export async function getAdminContents(filters?: {
-  query?: string;
-  grade?: string;
-  status?: string;
-}): Promise<ContentItem[]> {
-  const contents = hasSupabaseEnv() ? await getAllContentsFromSupabase() : await getPublishedContents();
+export async function getAdminContents(
+  filters?: {
+    query?: string;
+    grade?: string;
+    status?: string;
+  },
+  options?: {
+    includeRecentStats?: boolean;
+  },
+): Promise<AdminContentListItem[]> {
+  let contents: ContentItem[] = [];
+  let recentContentViewCounts = new Map<string, number>();
 
-  return contents.filter((content) => {
+  if (hasSupabaseEnv()) {
+    const recentEventsPromise = options?.includeRecentStats
+      ? getDashboardEventsFromSupabase(getKstStartOfDaysAgo(6).toISOString())
+      : Promise.resolve<DashboardEventRow[]>([]);
+
+    const [allContents, recentEvents] = await Promise.all([getAllContentsFromSupabase(), recentEventsPromise]);
+    contents = allContents;
+    recentContentViewCounts = buildEventCounts(recentEvents, "content_view", "content_id");
+  } else {
+    contents = await getPublishedContents();
+  }
+
+  const enrichedContents = contents.map((content) => ({
+    ...content,
+    recentContentViews: recentContentViewCounts.get(content.id) ?? 0,
+  }));
+
+  return enrichedContents.filter((content) => {
     const matchesQuery =
       !filters?.query || `${content.title} ${content.summary}`.toLowerCase().includes(filters.query.toLowerCase());
     const matchesGrade = !filters?.grade || content.grade === filters.grade;
@@ -388,6 +549,8 @@ export async function getAdminCollections(): Promise<CollectionItem[]> {
 
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const [contents, banners, ctas] = await Promise.all([getAdminContents(), getAdminBanners(), getAdminCtas()]);
+  const emptyDailyMetrics7 = buildEmptyDailyMetrics(7);
+  const emptyDailyMetrics30 = buildEmptyDailyMetrics(30);
 
   const fallbackDashboard: AdminDashboardData = {
     totalPublishedContents: contents.filter((content) => content.isPublished).length,
@@ -402,6 +565,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       date: `${index + 1}일`,
       value: 0,
     })),
+    dailyMetrics7: emptyDailyMetrics7,
+    dailyMetrics30: emptyDailyMetrics30,
     topSources: [],
     topMediums: [],
     topCampaigns: [],
@@ -419,15 +584,21 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   const todayStart = getKstStartOfDay();
   const sevenDaysStart = getKstStartOfDaysAgo(6);
+  const thirtyDaysStart = getKstStartOfDaysAgo(29);
 
   const [recentEvents, totalPageViews, totalSessionRows] = await Promise.all([
-    getDashboardEventsFromSupabase(sevenDaysStart.toISOString()),
+    getDashboardEventsFromSupabase(thirtyDaysStart.toISOString()),
     getTotalPageViewCountFromSupabase(),
     getAllPageViewSessionIdsFromSupabase(),
   ]);
+  const recentSevenDayEvents = recentEvents.filter(
+    (event) => new Date(event.created_at).getTime() >= sevenDaysStart.getTime(),
+  );
 
   const todayEvents = recentEvents.filter((event) => new Date(event.created_at).getTime() >= todayStart.getTime());
   const todaySessionEntries = getTodaySessionEntries(todayEvents);
+  const dailyMetrics7 = buildDailyMetricRows(recentSevenDayEvents, 7);
+  const dailyMetrics30 = buildDailyMetricRows(recentEvents, 30);
 
   const dailyPageViewsMap = new Map<string, number>();
 
@@ -437,7 +608,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     dailyPageViewsMap.set(key, 0);
   }
 
-  recentEvents.forEach((event) => {
+  recentSevenDayEvents.forEach((event) => {
     if (event.event_type !== "page_view") {
       return;
     }
@@ -478,29 +649,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const ctaMap = new Map(ctas.map((cta) => [cta.id, cta]));
   const bannerMap = new Map(banners.map((banner) => [banner.id, banner]));
 
-  const contentCounts = countBy(
-    todayEvents
-      .filter((event) => event.event_type === "content_view")
-      .map((event) => event.content_id),
-    "",
-  );
-  contentCounts.delete("");
-
-  const ctaCounts = countBy(
-    todayEvents
-      .filter((event) => event.event_type === "cta_click")
-      .map((event) => event.cta_id),
-    "",
-  );
-  ctaCounts.delete("");
-
-  const bannerCounts = countBy(
-    todayEvents
-      .filter((event) => event.event_type === "banner_click")
-      .map((event) => event.banner_id),
-    "",
-  );
-  bannerCounts.delete("");
+  const contentCounts = buildEventCounts(recentSevenDayEvents, "content_view", "content_id");
+  const ctaCounts = buildEventCounts(recentSevenDayEvents, "cta_click", "cta_id");
+  const bannerCounts = buildEventCounts(recentSevenDayEvents, "banner_click", "banner_id");
 
   const topContents = buildTopItems(contentCounts, {
     limit: 5,
@@ -538,6 +689,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       date: formatKstMonthDay(new Date(`${date}T00:00:00+09:00`)),
       value,
     })),
+    dailyMetrics7,
+    dailyMetrics30,
     topSources,
     topMediums,
     topCampaigns,
@@ -548,6 +701,16 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     recentContents: contents.slice(0, 5),
     alerts: buildDashboardAlerts(contents, banners, totalPageViews),
   };
+}
+
+export async function getAdminDailyMetrics(days: 7 | 30): Promise<AdminDailyMetricRow[]> {
+  if (!hasSupabaseEnv()) {
+    return buildEmptyDailyMetrics(days);
+  }
+
+  const fromDate = getKstStartOfDaysAgo(days - 1);
+  const events = await getDashboardEventsFromSupabase(fromDate.toISOString());
+  return buildDailyMetricRows(events, days);
 }
 
 export async function getSelectableContents() {

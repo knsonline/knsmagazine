@@ -36,7 +36,7 @@ function VideoIcon() {
 
 export function ContentTypeInline({ contentType, className }: ContentTypeInlineProps) {
   return (
-    <span className={joinClassNames("inline-flex items-center gap-1.5", className)}>
+    <span className={joinClassNames("text-label inline-flex items-center gap-1.5 whitespace-nowrap", className)}>
       {contentType === "영상" ? <VideoIcon /> : <DocumentIcon />}
       <span>{contentType}</span>
     </span>

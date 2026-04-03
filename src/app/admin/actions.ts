@@ -6,9 +6,10 @@ import { requireAdminUser } from "@/lib/auth/admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { BANNER_BUCKET, extractBannerStoragePath } from "@/lib/storage/banners";
-import { THUMBNAIL_BUCKET } from "@/lib/storage/thumbnails";
+import { extractThumbnailStoragePath, THUMBNAIL_BUCKET } from "@/lib/storage/thumbnails";
 import { getIdSlugPrefix } from "@/lib/utils/slug";
 import { toNullableMultilineText } from "@/lib/utils/text";
+import type { ContentRow } from "@/types/database";
 
 function parseBoolean(value: FormDataEntryValue | null) {
   return value === "on" || value === "true";
@@ -58,6 +59,41 @@ function revalidateAdminContentRoutes(id: string) {
 
 function revalidateCollectionRoutes(id: string) {
   revalidatePath(`/collections/${getIdSlugPrefix(id)}`);
+}
+
+async function isThumbnailPathReferencedByOtherContents(path: string, excludeContentId?: string) {
+  if (!path || !hasSupabaseEnv()) {
+    return false;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  let query = supabase.from("contents").select("id,thumbnail_url").not("thumbnail_url", "is", null);
+
+  if (excludeContentId) {
+    query = query.neq("id", excludeContentId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return ((data ?? []) as Pick<ContentRow, "id" | "thumbnail_url">[]).some(
+    (row) => extractThumbnailStoragePath(row.thumbnail_url) === path,
+  );
+}
+
+async function removeThumbnailIfUnused(path: string | null, excludeContentId?: string) {
+  if (!path) {
+    return;
+  }
+
+  const isReferenced = await isThumbnailPathReferencedByOtherContents(path, excludeContentId);
+
+  if (!isReferenced) {
+    await removeThumbnailIfExists(path);
+  }
 }
 
 export async function logoutAction() {
@@ -180,7 +216,7 @@ export async function updateContentAction(id: string, formData: FormData) {
   }
 
   if (previousThumbnailPath && previousThumbnailPath !== nextThumbnailPath) {
-    await removeThumbnailIfExists(previousThumbnailPath);
+    await removeThumbnailIfUnused(previousThumbnailPath, id);
   }
 
   revalidateMagazine();
@@ -209,6 +245,48 @@ export async function deleteContentAction(id: string) {
   revalidatePath("/admin");
   revalidateAdminContentRoutes(id);
   redirect("/admin/contents");
+}
+
+export async function duplicateContentAction(id: string) {
+  await requireAdminUser();
+
+  if (!hasSupabaseEnv()) {
+    redirect("/admin/contents");
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: sourceContent, error: sourceError } = await supabase.from("contents").select("*").eq("id", id).single();
+
+  if (sourceError || !sourceContent) {
+    throw new Error(sourceError?.message ?? "복제할 콘텐츠를 찾을 수 없습니다.");
+  }
+
+  const payload = {
+    title: `[복사본] ${sourceContent.title}`,
+    summary: sourceContent.summary,
+    body: sourceContent.body,
+    external_url: "",
+    thumbnail_url: sourceContent.thumbnail_url,
+    grade: sourceContent.grade,
+    topic: sourceContent.topic,
+    content_type: sourceContent.content_type,
+    is_published: false,
+    is_featured: false,
+    is_hero: false,
+    cta_id: sourceContent.cta_id,
+  };
+
+  const { data, error } = await supabase.from("contents").insert(payload).select("id").single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidateMagazine();
+  revalidatePath("/admin");
+  revalidatePath("/admin/contents");
+  revalidateAdminContentRoutes(data.id);
+  redirect(`/admin/contents/${data.id}/edit?duplicated=1`);
 }
 
 export async function createCtaAction(formData: FormData) {

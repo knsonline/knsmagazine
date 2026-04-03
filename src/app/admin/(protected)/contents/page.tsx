@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { duplicateContentAction } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getAdminContents } from "@/lib/data/admin";
+
+const numberFormatter = new Intl.NumberFormat("ko-KR");
 
 interface AdminContentsPageProps {
   searchParams: Promise<{
@@ -17,6 +20,8 @@ export default async function AdminContentsPage({ searchParams }: AdminContentsP
     query: resolvedSearchParams.q,
     grade: resolvedSearchParams.grade,
     status: resolvedSearchParams.status,
+  }, {
+    includeRecentStats: true,
   });
 
   return (
@@ -71,6 +76,13 @@ export default async function AdminContentsPage({ searchParams }: AdminContentsP
         </button>
       </form>
 
+      <div className="rounded-2xl bg-ivory px-4 py-4 text-sm text-text-secondary">
+        <p className="font-semibold text-text-primary">복제는 안전한 초안 템플릿으로 생성됩니다.</p>
+        <p className="mt-2">
+          복제본은 비공개 상태로 만들어지고, 외부 링크는 비워지며, 홈 추천과 히어로 지정은 모두 해제됩니다.
+        </p>
+      </div>
+
       {contents.length > 0 ? (
         <div className="card-surface overflow-hidden">
           <div className="overflow-x-auto">
@@ -81,8 +93,8 @@ export default async function AdminContentsPage({ searchParams }: AdminContentsP
                   <th className="px-4 py-4">학년</th>
                   <th className="px-4 py-4">주제</th>
                   <th className="px-4 py-4">타입</th>
+                  <th className="px-4 py-4">반응</th>
                   <th className="px-4 py-4">상태</th>
-                  <th className="px-4 py-4">홈추천</th>
                   <th className="px-4 py-4">관리</th>
                 </tr>
               </thead>
@@ -90,22 +102,47 @@ export default async function AdminContentsPage({ searchParams }: AdminContentsP
                 {contents.map((content) => (
                   <tr key={content.id} className="border-t border-black/6">
                     <td className="px-4 py-4">
-                      <div className="font-semibold text-text-primary">{content.title}</div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="font-semibold text-text-primary">{content.title}</div>
+                        {content.isFeatured ? <Badge tone="gold">홈 추천</Badge> : null}
+                      </div>
                       <div className="mt-1 text-xs text-text-secondary">/contents/{content.slug}</div>
                     </td>
                     <td className="px-4 py-4">{content.grade}</td>
                     <td className="px-4 py-4">{content.topic}</td>
                     <td className="px-4 py-4">{content.contentType}</td>
                     <td className="px-4 py-4">
-                      <Badge tone={content.isPublished ? "success" : "muted"}>
-                        {content.isPublished ? "공개" : "비공개"}
-                      </Badge>
+                      <div className="min-w-[144px] space-y-2">
+                        <div>
+                          <p className="text-xs text-text-secondary">최근 7일 상세조회</p>
+                          <p className="font-semibold text-text-primary">
+                            {numberFormatter.format(content.recentContentViews)}회
+                          </p>
+                        </div>
+                        <Badge tone={content.ctaId ? "navy" : "muted"}>{content.ctaId ? "CTA 연결" : "CTA 없음"}</Badge>
+                      </div>
                     </td>
-                    <td className="px-4 py-4">{content.isFeatured ? "●" : "-"}</td>
                     <td className="px-4 py-4">
-                      <Link href={`/admin/contents/${content.id}/edit`} className="font-semibold text-navy">
-                        수정
-                      </Link>
+                      <div className="space-y-2">
+                        <Badge tone={content.isPublished ? "success" : "muted"}>
+                          {content.isPublished ? "공개" : "비공개"}
+                        </Badge>
+                        <p className="text-xs text-text-secondary">
+                          {content.isPublished ? "노출 중" : "노출 안 함"}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex min-w-[124px] flex-wrap gap-3">
+                        <Link href={`/admin/contents/${content.id}/edit`} className="font-semibold text-navy">
+                          수정
+                        </Link>
+                        <form action={duplicateContentAction.bind(null, content.id)}>
+                          <button type="submit" className="font-semibold text-text-secondary transition hover:text-navy">
+                            복제
+                          </button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 ))}

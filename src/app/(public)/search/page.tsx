@@ -53,7 +53,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             />
             <button
               type="submit"
-              className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-cta-primary px-5 text-sm font-semibold text-white"
+              className="text-button inline-flex min-h-12 items-center justify-center rounded-2xl bg-cta-primary px-5 text-sm font-semibold text-white"
             >
               검색하기
             </button>

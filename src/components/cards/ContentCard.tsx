@@ -28,11 +28,12 @@ export function ContentCard({ content }: ContentCardProps) {
       <ContentThumbnail
         src={content.thumbnailUrl}
         alt={content.title}
-        imageClassName="transition duration-300 group-hover:scale-[1.02]"
-        sizes="(max-width: 1024px) 100vw, 33vw"
+        containerClassName="aspect-[4/3] border-b border-[rgba(27,42,74,0.06)] bg-[#edf3f9] sm:aspect-video"
+        imageClassName="transition duration-300 group-hover:scale-[1.015] saturate-[0.96]"
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
       />
 
-      <div className="flex flex-1 flex-col gap-4 p-5">
+      <div className="flex flex-1 flex-col gap-4 p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           <Badge>{content.grade}</Badge>
           <Badge tone="muted">{content.topic}</Badge>
@@ -45,12 +46,14 @@ export function ContentCard({ content }: ContentCardProps) {
           </div>
         ) : null}
 
-        <div className="space-y-2">
-          <h3 className="line-clamp-2 text-xl font-semibold leading-8 tracking-[-0.02em] text-text-primary">
+        <div className="space-y-2.5">
+          <h3 className="text-keep text-balance line-clamp-2 text-[21px] font-semibold leading-[1.42] tracking-[-0.025em] text-text-primary lg:text-xl">
             {content.title}
           </h3>
           {description ? (
-            <p className="line-clamp-2 text-sm leading-7 text-text-secondary sm:text-base">{description}</p>
+            <p className="text-keep text-pretty line-clamp-3 text-sm leading-[1.72] text-text-secondary sm:line-clamp-2 sm:text-[15px]">
+              {description}
+            </p>
           ) : null}
         </div>
 
