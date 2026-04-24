@@ -3,12 +3,12 @@
 import { useMemo } from "react";
 import { buildOutboundTrackedUrl } from "@/lib/analytics/attribution";
 import { trackEvent } from "@/lib/analytics/tracker";
-import type { AnalyticsEventPayload } from "@/types/analytics";
+import type { AnalyticEvent } from "@/types/analytics";
 
 interface TrackedExternalLinkProps {
   href: string;
   className?: string;
-  event: AnalyticsEventPayload;
+  event: AnalyticEvent;
   children: React.ReactNode;
   onClick?: () => void;
 }
@@ -21,15 +21,22 @@ export function TrackedExternalLink({
   onClick,
 }: TrackedExternalLinkProps) {
   const trackedHref = useMemo(
-    () =>
-      buildOutboundTrackedUrl({
+    () => {
+      return buildOutboundTrackedUrl({
         rawUrl: href,
         eventType: event.eventType,
-        pagePath: event.pagePath,
+        pagePath: event.pagePath ?? "unknown",
         placement: event.placement,
         contentSlug: event.contentSlug,
-      }),
-    [event.contentSlug, event.eventType, event.pagePath, event.placement, href],
+      });
+    },
+    [
+      event.contentSlug,
+      event.eventType,
+      event.pagePath,
+      event.placement,
+      href,
+    ],
   );
 
   return (
@@ -39,7 +46,10 @@ export function TrackedExternalLink({
       rel="noreferrer"
       className={className}
       onClick={() => {
-        trackEvent(event);
+        trackEvent({
+          ...event,
+          outboundUrl: href,
+        });
         onClick?.();
       }}
     >

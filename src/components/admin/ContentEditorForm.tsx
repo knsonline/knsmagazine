@@ -12,6 +12,7 @@ import {
   CONTENT_THUMBNAIL_SAFE_AREA_GUIDE,
 } from "@/constants/media";
 import { GRADES, TOPICS } from "@/constants/taxonomy";
+import type { ContentItem } from "@/types/content";
 import { prepareThumbnailFile } from "@/lib/storage/thumbnail-image-client";
 import {
   THUMBNAIL_ACCEPT_ATTRIBUTE,
@@ -20,11 +21,15 @@ import {
   extractThumbnailStoragePath,
   getThumbnailValidationError,
 } from "@/lib/storage/thumbnails";
-import type { ContentItem, Cta } from "@/types/content";
-
 interface ContentEditorFormProps {
   content?: ContentItem;
-  ctas: Cta[];
+  ctas: Array<{
+    id: string;
+    label: string;
+    url: string;
+    kind?: "consult" | "external";
+    consultSegment?: string | null;
+  }>;
   footerAction?: ReactNode;
 }
 
@@ -213,7 +218,7 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
         <p className="mt-1">{THUMBNAIL_GUIDE_COPY.safeArea}</p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-4">
+      <div className="grid gap-6 xl:grid-cols-5">
         <div className="space-y-2">
           <label className="text-sm font-semibold text-text-primary" htmlFor="grade">
             학년
@@ -265,9 +270,9 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
           </select>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 xl:col-span-2">
           <label className="text-sm font-semibold text-text-primary" htmlFor="cta_id">
-            CTA 연결
+            대표 CTA (상담/설명회 연결)
           </label>
           <select
             id="cta_id"
@@ -275,10 +280,12 @@ export function ContentEditorForm({ content, ctas, footerAction }: ContentEditor
             defaultValue={content?.ctaId ?? ""}
             className="min-h-12 w-full rounded-2xl border border-black/10 bg-ivory px-4 outline-none"
           >
-            <option value="">연결 안 함</option>
+            <option value="">연결 안 함 (본문 방문 유도)</option>
             {ctas.map((cta) => (
               <option key={cta.id} value={cta.id}>
-                {cta.label}
+                {cta.kind === "consult"
+                  ? `${cta.label}${cta.consultSegment ? ` · ${cta.consultSegment}` : ""}`
+                  : `${cta.label} · 외부 안내`}
               </option>
             ))}
           </select>

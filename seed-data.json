@@ -147,20 +147,37 @@
   ],
   "ctas": [
     {
-      "label": "무료 학습 상담 신청하기",
-      "url": "https://kns-consult.example.com"
+      "label": "초등관 바로 상담",
+      "url": "tel:02-555-1201",
+      "kind": "consult",
+      "consult_segment": "초등"
+    },
+    {
+      "label": "중1관 바로 상담",
+      "url": "tel:02-555-1202",
+      "kind": "consult",
+      "consult_segment": "중1"
+    },
+    {
+      "label": "고등관 바로 상담",
+      "url": "tel:02-555-1203",
+      "kind": "consult",
+      "consult_segment": "고등관"
     },
     {
       "label": "가까운 설명회 일정 확인",
-      "url": "https://kns-seminar.example.com"
+      "url": "https://kns-seminar.example.com",
+      "kind": "external"
     },
     {
       "label": "우리 아이 학습 진단 받기",
-      "url": "https://kns-diagnosis.example.com"
+      "url": "https://kns-diagnosis.example.com",
+      "kind": "external"
     }
   ],
   "banners": [
     {
+      "title": "4월 학부모 설명회 안내",
       "image_url": "/seed/banner-summer-seminar.jpg",
       "link_url": "https://kns-seminar.example.com/summer-2025",
       "starts_at": "2025-06-01",

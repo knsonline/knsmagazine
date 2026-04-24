@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ContentImpressionTracker } from "@/components/analytics/ContentImpressionTracker";
-import { Badge } from "@/components/ui/Badge";
+import { Badge, getGradeBadgeClassName, getTopicBadgeClassName } from "@/components/ui/Badge";
 import { ContentTypeInline } from "@/components/ui/ContentTypeInline";
 import { getCompactDescription } from "@/lib/utils/content-preview";
 import { formatKoreanDate } from "@/lib/utils/format";
@@ -16,30 +16,24 @@ export function CompactContentCard({ content }: CompactContentCardProps) {
   return (
     <Link
       href={`/contents/${content.slug}`}
-      className="card-surface group relative block w-full overflow-hidden px-5 py-4 transition-transform duration-200 hover:-translate-y-1"
+      className="group relative block w-full overflow-hidden rounded-[24px] border border-black/6 bg-white px-5 py-4 shadow-sm transition-transform duration-200 hover:-translate-y-1"
     >
       <ContentImpressionTracker
         contentId={content.id}
         grade={content.grade}
         topic={content.topic}
-        contentType={content.contentType}
       />
 
       <div className="min-w-0 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge>{content.grade}</Badge>
-          <Badge tone="muted">{content.topic}</Badge>
+          <Badge className={getGradeBadgeClassName(content.grade)}>{content.grade}</Badge>
+          <Badge className={getTopicBadgeClassName(content.topic)}>{content.topic}</Badge>
           <span className="text-xs text-text-secondary">{formatKoreanDate(content.publishedAt)}</span>
+          {content.isFeatured ? <Badge tone="gold">운영자 추천</Badge> : null}
         </div>
 
-        {content.isFeatured ? (
-          <div className="self-start">
-            <Badge tone="gold">운영자 추천</Badge>
-          </div>
-        ) : null}
-
-        <div className="min-w-0 space-y-2">
-          <h3 className="text-keep text-balance line-clamp-2 text-[17px] font-semibold leading-[1.55] tracking-[-0.02em] text-text-primary">
+        <div className="min-w-0 space-y-2.5">
+          <h3 className="text-keep text-balance line-clamp-2 text-[17px] font-semibold leading-[1.55] tracking-[-0.01em] text-text-primary">
             {content.title}
           </h3>
           {description ? (

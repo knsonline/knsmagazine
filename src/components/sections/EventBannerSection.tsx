@@ -1,6 +1,8 @@
 import { TrackedExternalLink } from "@/components/analytics/TrackedExternalLink";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MagazineImage } from "@/components/ui/MagazineImage";
+import { SITE_COPY } from "@/constants/site";
+import { resolveBannerDisplayCopy } from "@/lib/utils/banner-copy";
 import { protectPhraseSpacing } from "@/lib/utils/text";
 import type { BannerItem } from "@/types/content";
 
@@ -14,19 +16,19 @@ export function EventBannerSection({ banners }: EventBannerSectionProps) {
   }
 
   return (
-    <section className="section-space bg-white">
+    <section className="section-space bg-ivory-warm">
       <div className="shell">
         <SectionHeader
-          title="설명회·이벤트 배너"
-          description="설명회 일정과 이벤트 소식을 한 번에 확인하실 수 있습니다."
+          title={SITE_COPY.banners.title}
+          description={SITE_COPY.banners.description}
         />
 
         <div className="grid gap-4 lg:grid-cols-2">
           {banners.map((banner) => {
-            const displayTitle = banner.startsAt
-              ? `${new Date(banner.startsAt).getFullYear()} 설명회 일정 확인하기`
-              : "KNS 설명회 일정 확인하기";
+            const copy = resolveBannerDisplayCopy(banner);
+            const displayTitle = copy.title;
             const protectedTitle = protectPhraseSpacing(displayTitle);
+            const protectedDescription = protectPhraseSpacing(copy.description);
 
             return (
               <TrackedExternalLink
@@ -36,9 +38,9 @@ export function EventBannerSection({ banners }: EventBannerSectionProps) {
                   eventType: "banner_click",
                   pagePath: "/",
                   bannerId: banner.id,
-                  placement: "event_banner_grid",
+                  placement: "home_banner_feature",
                 }}
-                className="card-surface group overflow-hidden"
+                className="card-surface group overflow-hidden rounded-[28px]"
               >
                 <div className="relative aspect-[16/7]">
                   <MagazineImage
@@ -48,12 +50,12 @@ export function EventBannerSection({ banners }: EventBannerSectionProps) {
                     sizes="(max-width: 1024px) 100vw, 50vw"
                   />
                 </div>
-                <div className="p-6">
-                  <p className="text-keep text-balance max-w-[16ch] text-2xl font-semibold leading-[1.35] tracking-[-0.03em] text-text-primary">
+                <div className="p-5 sm:p-6">
+                  <p className="text-keep text-balance max-w-[19ch] text-[26px] font-semibold leading-[1.28] tracking-[-0.018em] text-text-primary">
                     {protectedTitle}
                   </p>
-                  <p className="text-keep text-pretty mt-3 text-sm leading-[1.7] text-text-secondary">
-                    배너를 눌러 자세한 안내를 확인해 보세요.
+                  <p className="text-keep text-pretty mt-2 text-sm leading-[1.68] text-text-secondary">
+                    {protectedDescription}
                   </p>
                 </div>
               </TrackedExternalLink>

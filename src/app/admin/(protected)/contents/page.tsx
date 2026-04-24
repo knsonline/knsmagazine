@@ -3,26 +3,27 @@ import { duplicateContentAction } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getAdminContents } from "@/lib/data/admin";
-
-const numberFormatter = new Intl.NumberFormat("ko-KR");
+import { normalizeAdminCalendarPeriod } from "@/lib/data/admin-analytics";
 
 interface AdminContentsPageProps {
   searchParams: Promise<{
     q?: string;
     grade?: string;
     status?: string;
+    period?: string;
   }>;
 }
 
 export default async function AdminContentsPage({ searchParams }: AdminContentsPageProps) {
   const resolvedSearchParams = await searchParams;
+  const period = normalizeAdminCalendarPeriod(resolvedSearchParams.period);
   const contents = await getAdminContents({
     query: resolvedSearchParams.q,
     grade: resolvedSearchParams.grade,
     status: resolvedSearchParams.status,
-  }, {
-    includeRecentStats: true,
-  });
+  }, period);
+  const periodLabel =
+    period === "today" ? "오늘" : period === "calendar_month" ? "이번 달" : "이번 주";
 
   return (
     <div className="space-y-6">
@@ -39,7 +40,7 @@ export default async function AdminContentsPage({ searchParams }: AdminContentsP
         </Link>
       </div>
 
-      <form className="card-surface grid gap-4 p-5 xl:grid-cols-[1fr_180px_180px_auto]">
+      <form className="card-surface grid gap-4 p-5 xl:grid-cols-[1fr_180px_180px_180px_auto]">
         <input
           type="search"
           name="q"
@@ -68,6 +69,15 @@ export default async function AdminContentsPage({ searchParams }: AdminContentsP
           <option value="published">공개</option>
           <option value="draft">비공개</option>
         </select>
+        <select
+          name="period"
+          defaultValue={period}
+          className="min-h-12 rounded-2xl border border-black/10 bg-ivory px-4 outline-none"
+        >
+          <option value="today">오늘</option>
+          <option value="calendar_week">이번 주</option>
+          <option value="calendar_month">이번 달</option>
+        </select>
         <button
           type="submit"
           className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-black/10 bg-white px-5 text-sm font-semibold text-text-primary"
@@ -81,6 +91,7 @@ export default async function AdminContentsPage({ searchParams }: AdminContentsP
         <p className="mt-2">
           복제본은 비공개 상태로 만들어지고, 외부 링크는 비워지며, 홈 추천과 히어로 지정은 모두 해제됩니다.
         </p>
+        <p className="mt-2 text-text-primary">{periodLabel} 반응 지표를 함께 보고 편집 우선순위를 정해 보세요.</p>
       </div>
 
       {contents.length > 0 ? (
@@ -90,11 +101,15 @@ export default async function AdminContentsPage({ searchParams }: AdminContentsP
               <thead className="bg-ivory text-text-secondary">
                 <tr>
                   <th className="px-4 py-4">제목</th>
+
                   <th className="px-4 py-4">학년</th>
                   <th className="px-4 py-4">주제</th>
                   <th className="px-4 py-4">타입</th>
-                  <th className="px-4 py-4">반응</th>
+
                   <th className="px-4 py-4">상태</th>
+                  <th className="px-4 py-4 text-right">{periodLabel} 상세조회</th>
+                  <th className="px-4 py-4 text-right">{periodLabel} 원문이동</th>
+                  <th className="px-4 py-4 text-right">{periodLabel} 상담기여</th>
                   <th className="px-4 py-4">관리</th>
                 </tr>
               </thead>
@@ -108,20 +123,11 @@ export default async function AdminContentsPage({ searchParams }: AdminContentsP
                       </div>
                       <div className="mt-1 text-xs text-text-secondary">/contents/{content.slug}</div>
                     </td>
+
                     <td className="px-4 py-4">{content.grade}</td>
                     <td className="px-4 py-4">{content.topic}</td>
                     <td className="px-4 py-4">{content.contentType}</td>
-                    <td className="px-4 py-4">
-                      <div className="min-w-[144px] space-y-2">
-                        <div>
-                          <p className="text-xs text-text-secondary">최근 7일 상세조회</p>
-                          <p className="font-semibold text-text-primary">
-                            {numberFormatter.format(content.recentContentViews)}회
-                          </p>
-                        </div>
-                        <Badge tone={content.ctaId ? "navy" : "muted"}>{content.ctaId ? "CTA 연결" : "CTA 없음"}</Badge>
-                      </div>
-                    </td>
+
                     <td className="px-4 py-4">
                       <div className="space-y-2">
                         <Badge tone={content.isPublished ? "success" : "muted"}>
@@ -131,6 +137,15 @@ export default async function AdminContentsPage({ searchParams }: AdminContentsP
                           {content.isPublished ? "노출 중" : "노출 안 함"}
                         </p>
                       </div>
+                    </td>
+                    <td className="px-4 py-4 text-right font-semibold text-text-primary">
+                      {content.periodContentViews}
+                    </td>
+                    <td className="px-4 py-4 text-right font-semibold text-text-primary">
+                      {content.periodOutboundClicks}
+                    </td>
+                    <td className="px-4 py-4 text-right font-semibold text-text-primary">
+                      {content.periodConsultClicks}
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex min-w-[124px] flex-wrap gap-3">

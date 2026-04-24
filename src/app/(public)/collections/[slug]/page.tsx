@@ -6,6 +6,7 @@ import { ContentCard } from "@/components/cards/ContentCard";
 import { SoftCtaSection } from "@/components/sections/SoftCtaSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { SITE_COPY } from "@/constants/site";
 import { getCollectionBySlug, getPrimaryConsultCta } from "@/lib/data/content";
 
 interface CollectionPageProps {
@@ -41,14 +42,13 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
         eventType="collection_view"
         pagePath={`/collections/${collection.slug}`}
         collectionId={collection.id}
-        collectionName={collection.name}
       />
 
       <section className="section-space bg-white">
         <div className="shell">
           <SectionHeader
             title={collection.name}
-            description="한 주제를 입체적으로 이해할 수 있도록 연결한 큐레이션 묶음입니다."
+            description={SITE_COPY.collections.pageDescription}
           />
 
           {lead ? (
@@ -61,22 +61,26 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                   rest.map((item) => <CompactContentCard key={item.id} content={item} />)
                 ) : (
                   <EmptyState
-                    title="대표 콘텐츠부터 먼저 읽어 보세요."
-                    description="이 컬렉션은 핵심 콘텐츠를 중심으로 차분하게 확장됩니다."
+                    title={SITE_COPY.collections.previewEmptyTitle}
+                    description={SITE_COPY.collections.previewEmptyDescription}
                   />
                 )}
               </div>
             </div>
           ) : (
             <EmptyState
-              title="컬렉션이 비어 있어요."
-              description="곧 관련 콘텐츠가 채워질 예정입니다."
+              title={SITE_COPY.collections.pageEmptyTitle}
+              description={SITE_COPY.collections.pageEmptyDescription}
             />
           )}
         </div>
       </section>
 
-      <SoftCtaSection cta={consultCta} pagePath={`/collections/${collection.slug}`} />
+      <SoftCtaSection
+        cta={consultCta}
+        pagePath={`/collections/${collection.slug}`}
+        placement="collection_soft_cta"
+      />
     </>
   );
 }

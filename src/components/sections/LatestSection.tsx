@@ -1,6 +1,7 @@
 import { ContentListCard } from "@/components/cards/ContentListCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { SITE_COPY } from "@/constants/site";
 import type { ContentItem } from "@/types/content";
 
 interface LatestSectionProps {
@@ -11,7 +12,11 @@ export function LatestSection({ items }: LatestSectionProps) {
   return (
     <section className="bg-white section-space">
       <div className="shell">
-        <SectionHeader title="최신 콘텐츠" href="/contents" />
+        <SectionHeader
+          title={SITE_COPY.latestTitle}
+          description={SITE_COPY.latestDescription}
+          href="/contents"
+        />
 
         {items.length > 0 ? (
           <div className="space-y-3">

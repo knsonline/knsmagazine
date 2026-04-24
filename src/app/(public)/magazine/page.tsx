@@ -5,7 +5,7 @@ import { SoftCtaSection } from "@/components/sections/SoftCtaSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { SITE_NAME } from "@/constants/site";
+import { SITE_COPY, SITE_NAME } from "@/constants/site";
 import { getLatestContents, getPrimaryConsultCta } from "@/lib/data/content";
 import { clampPage } from "@/lib/utils/format";
 
@@ -36,7 +36,10 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
       <EventLogger eventType="page_view" pagePath="/contents" />
       <section className="section-space bg-white">
         <div className="shell">
-          <SectionHeader title="전체 콘텐츠" />
+          <SectionHeader
+            title="전체 콘텐츠"
+            description={SITE_COPY.contentsDescription}
+          />
 
           {items.length > 0 ? (
             <div className="space-y-3">
@@ -55,7 +58,7 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
           />
         </div>
       </section>
-      <SoftCtaSection cta={consultCta} pagePath="/contents" />
+      <SoftCtaSection cta={consultCta} pagePath="/contents" placement="contents_soft_cta" />
     </>
   );
 }

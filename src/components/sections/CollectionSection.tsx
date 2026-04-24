@@ -2,6 +2,7 @@ import { CompactContentCard } from "@/components/cards/CompactContentCard";
 import { ContentCard } from "@/components/cards/ContentCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { SITE_COPY } from "@/constants/site";
 import type { CollectionItem } from "@/types/content";
 
 interface CollectionSectionProps {
@@ -20,28 +21,39 @@ export function CollectionSection({
       <div className="shell">
         <SectionHeader
           title={collection.name}
-          description="한 번에 이어서 보면 흐름이 더 잘 잡히는 주제별 묶음입니다."
+          description={SITE_COPY.collections.description}
           href={`/collections/${collection.slug}`}
         />
 
         {lead ? (
-          <div className="grid gap-5 lg:grid-cols-[1.45fr_minmax(0,1fr)] lg:items-start xl:grid-cols-[1.55fr_minmax(0,1fr)]">
-            <div className="min-w-0">
-              <ContentCard content={lead} />
+          <div className="rounded-[32px] border border-black/6 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,245,241,0.95))] p-5 sm:p-6">
+            <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-sm font-semibold tracking-[0.03em] text-text-secondary">작은 특집호</p>
+              </div>
+              <div className="rounded-full bg-ivory px-4 py-2 text-xs font-semibold text-text-secondary">
+                대표 1개 + 이어 읽기 {rest.length}개
+              </div>
             </div>
-            <div className="min-w-0 space-y-4">
-              {rest.length > 0 ? (
-                rest.map((content) => <CompactContentCard key={content.id} content={content} />)
-              ) : (
-                <EmptyState
-                  title="대표 콘텐츠를 먼저 확인해 보세요."
-                  description="이 컬렉션은 핵심 콘텐츠를 중심으로 차근차근 확장될 예정입니다."
-                />
-              )}
+
+            <div className="grid gap-5 lg:grid-cols-[1.45fr_minmax(0,1fr)] lg:items-start xl:grid-cols-[1.55fr_minmax(0,1fr)]">
+              <div className="min-w-0">
+                <ContentCard content={lead} />
+              </div>
+              <div className="min-w-0 space-y-4">
+                {rest.length > 0 ? (
+                  rest.map((content) => <CompactContentCard key={content.id} content={content} />)
+                ) : (
+                  <EmptyState
+                    title={SITE_COPY.collections.previewEmptyTitle}
+                    description={SITE_COPY.collections.previewEmptyDescription}
+                  />
+                )}
+              </div>
             </div>
           </div>
         ) : (
-          <EmptyState title="아직 묶인 콘텐츠가 없어요." description="곧 주제별 큐레이션이 채워집니다." />
+          <EmptyState title={SITE_COPY.collections.pageEmptyTitle} description={SITE_COPY.collections.pageEmptyDescription} />
         )}
       </div>
     </section>

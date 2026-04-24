@@ -6,8 +6,8 @@ export interface AdminDailyMetricRow {
   pageViews: number;
   sessions: number;
   contentViews: number;
-  ctaClicks: number;
-  bannerClicks: number;
+  conversionClicks: number;
+  highIntentSessions: number;
 }
 
 interface AdminDailyMetricsTableProps {
@@ -44,8 +44,8 @@ export function AdminDailyMetricsTable({ items, selectedDays }: AdminDailyMetric
           { label: "페이지뷰", value: latest.pageViews - previous.pageViews },
           { label: "방문 세션", value: latest.sessions - previous.sessions },
           { label: "상세조회", value: latest.contentViews - previous.contentViews },
-          { label: "CTA 클릭", value: latest.ctaClicks - previous.ctaClicks },
-          { label: "배너 클릭", value: latest.bannerClicks - previous.bannerClicks },
+          { label: "전환 클릭", value: latest.conversionClicks - previous.conversionClicks },
+          { label: "고의도 세션", value: latest.highIntentSessions - previous.highIntentSessions },
         ]
       : [];
 
@@ -58,7 +58,7 @@ export function AdminDailyMetricsTable({ items, selectedDays }: AdminDailyMetric
             최근 {selectedDays}일 동안 날짜별 핵심 반응을 한 줄씩 읽을 수 있게 정리했습니다.
           </p>
           <p className="mt-1 text-xs leading-5 text-text-muted">
-            방문 세션은 해당 날짜에 이벤트를 남긴 쿠키 기반 세션 수입니다. 정확한 사람 수가 아니라 운영 흐름을 보는 기준으로 해석해 주세요.
+            전환 클릭은 상담·설명회·전화·시간표 안내 클릭을 합친 숫자입니다.
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export function AdminDailyMetricsTable({ items, selectedDays }: AdminDailyMetric
             {latest.dateLabel} 기준 전일 대비
           </p>
           <p className="mt-1 text-xs leading-5 text-text-muted">
-            비교 기준은 {previous.dateLabel}입니다. 급등락이 있으면 발행, 외부 공유, 배너 노출 여부를 함께 보시면 좋습니다.
+            비교 기준은 {previous.dateLabel}입니다. 세션은 많은데 고의도와 전환이 낮으면 콘텐츠와 CTA 연결을 함께 점검해 주세요.
           </p>
           <div className="mt-3 flex flex-wrap gap-2.5">
             {dailyDiffs.map((diff) => (
@@ -116,8 +116,8 @@ export function AdminDailyMetricsTable({ items, selectedDays }: AdminDailyMetric
                 <th className="px-4 py-3 text-right">페이지뷰</th>
                 <th className="px-4 py-3 text-right">방문 세션</th>
                 <th className="px-4 py-3 text-right">상세조회</th>
-                <th className="px-4 py-3 text-right">CTA 클릭</th>
-                <th className="px-4 py-3 text-right">배너 클릭</th>
+                <th className="px-4 py-3 text-right">전환 클릭</th>
+                <th className="px-4 py-3 text-right">고의도 세션</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[rgba(27,42,74,0.06)] bg-white">
@@ -137,8 +137,8 @@ export function AdminDailyMetricsTable({ items, selectedDays }: AdminDailyMetric
                     <td className="px-4 py-3.5 text-right font-semibold text-text-primary">{item.pageViews}</td>
                     <td className="px-4 py-3.5 text-right font-semibold text-text-primary">{item.sessions}</td>
                     <td className="px-4 py-3.5 text-right font-semibold text-text-primary">{item.contentViews}</td>
-                    <td className="px-4 py-3.5 text-right font-semibold text-text-primary">{item.ctaClicks}</td>
-                    <td className="px-4 py-3.5 text-right font-semibold text-text-primary">{item.bannerClicks}</td>
+                    <td className="px-4 py-3.5 text-right font-semibold text-text-primary">{item.conversionClicks}</td>
+                    <td className="px-4 py-3.5 text-right font-semibold text-text-primary">{item.highIntentSessions}</td>
                   </tr>
                 );
               })}

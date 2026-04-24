@@ -1,215 +1,224 @@
-import { AdminDailyMetricsTable } from "@/components/admin/AdminDailyMetricsTable";
-import { AdminLineChart } from "@/components/admin/AdminLineChart";
+import { AdminAlertList } from "@/components/admin/AdminAlertList";
+import { AdminInsightList } from "@/components/admin/AdminInsightList";
+import { AdminPeriodTabs } from "@/components/admin/AdminPeriodTabs";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminSummaryList } from "@/components/admin/AdminSummaryList";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { getAdminDashboardData } from "@/lib/data/admin";
+import { AdminTrendChart } from "@/components/admin/AdminTrendChart";
+import { getAdminDashboardData } from "@/lib/data/admin-dashboard";
+import { normalizeAdminCalendarPeriod } from "@/lib/data/admin-analytics";
 
 const numberFormatter = new Intl.NumberFormat("ko-KR");
 
 interface AdminDashboardPageProps {
-  searchParams?: Promise<{
-    range?: string;
+  searchParams: Promise<{
+    period?: string;
   }>;
 }
 
-export default async function AdminDashboardPage({ searchParams }: AdminDashboardPageProps) {
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const selectedDays: 7 | 30 = resolvedSearchParams?.range === "30" ? 30 : 7;
-  const dashboard = await getAdminDashboardData();
+function formatRate(rate: number) {
+  return `${Math.round(rate * 100)}%`;
+}
 
-  const stats = [
-    {
-      label: "오늘 페이지뷰",
-      value: dashboard.todayPageViews,
-      help: "페이지가 열릴 때마다 1씩 쌓이는 오늘 기준 숫자입니다. 같은 방문 세션의 새로고침도 포함될 수 있습니다.",
-      tooltip: "사람 수가 아니라 공개 페이지 진입 횟수입니다. 방문 흐름과 콘텐츠 반응을 함께 볼 때 기준점으로 쓰면 좋습니다.",
-    },
-    {
-      label: "누적 페이지뷰",
-      value: dashboard.totalPageViews,
-      help: "운영 시작 이후 공개 페이지 진입이 얼마나 쌓였는지 보는 누적 숫자입니다.",
-      tooltip: "같은 사람이 여러 페이지를 보거나 다시 들어오면 여러 번 집계될 수 있습니다.",
-    },
-    {
-      label: "오늘 방문 세션",
-      value: dashboard.todaySessions,
-      help: "오늘 처음 잡힌 방문 흐름의 수입니다. 현재 구조에서는 세션 기준 방문 수로 이해해 주세요.",
-      tooltip: "정확한 사용자 수가 아니라 브라우저 쿠키 기반 세션 수입니다.",
-    },
-    {
-      label: "누적 방문 세션",
-      value: dashboard.totalSessions,
-      help: "운영 시작 이후 쌓인 전체 방문 세션 수입니다. 페이지뷰보다 덜 부풀려진 흐름 수로 보시면 됩니다.",
-      tooltip: "브라우저 변경, 쿠키 삭제, 시크릿 창은 새로운 세션으로 잡힐 수 있습니다.",
-    },
-    {
-      label: "오늘 콘텐츠 상세 조회",
-      value: dashboard.todayContentViews,
-      help: "카드 노출이 아니라 실제 상세 페이지 진입만 세는 숫자입니다.",
-      tooltip: "content_view 기준이라 콘텐츠 관심도를 보는 데 더 적합합니다.",
-    },
-    {
-      label: "오늘 CTA 클릭",
-      value: dashboard.todayCtaClicks,
-      help: "상담 신청이나 안내 버튼처럼 행동으로 이어지는 클릭 수입니다.",
-      tooltip: "어떤 메시지가 실제 클릭으로 이어졌는지 보는 기준입니다.",
-    },
-    {
-      label: "오늘 배너 클릭",
-      value: dashboard.todayBannerClicks,
-      help: "이벤트 배너와 상단 프로모션 배너 반응을 오늘 기준으로 본 숫자입니다.",
-      tooltip: "배너 노출 대비 클릭률은 아직 별도 계산하지 않고, 반응 유무를 보는 용도로 사용합니다.",
-    },
-  ];
+export default async function AdminDashboardPage({
+  searchParams,
+}: AdminDashboardPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const period = normalizeAdminCalendarPeriod(resolvedSearchParams.period);
+  const dashboard = await getAdminDashboardData(period);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-[-0.03em] text-text-primary">운영 요약</h1>
-        <p className="mt-2 text-sm text-text-secondary">
-          공개 콘텐츠 {numberFormatter.format(dashboard.totalPublishedContents)}개 기준으로 오늘 반응과 유입 흐름을 함께 봅니다.
-        </p>
-      </div>
-
-      <div className="card-surface bg-ivory p-5">
-        <p className="text-sm font-semibold text-text-primary">집계 기준 안내</p>
-        <div className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">
-          <p>모든 수치는 한국 시간(KST) 기준으로 보여드립니다.</p>
-          <p>오늘은 한국 시간 00:00부터 현재 시점까지 쌓인 값이며, 방문 세션은 현재 구조에서 세션 기준 방문 수를 뜻합니다.</p>
-          <p>상단 KPI 카드는 오늘 기준을 유지하고, 콘텐츠·CTA·배너 랭킹은 최근 7일 누적 반응 기준으로 보여드립니다.</p>
-          <p>관리자 브라우저는 기본적으로 통계에서 제외되지만, 외부 테스트 접속이나 허용한 테스트 브라우저는 일부 포함될 수 있습니다.</p>
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <p className="text-sm font-semibold tracking-[0.03em] text-text-secondary">
+            KNS 교육 큐레이션 인사이트
+          </p>
+          <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-text-primary">
+            학부모 여정 관제 센터
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-text-secondary">
+            유입 경로, 콘텐츠 관심, 원문 이동, 상담 전환을 {dashboard.periodLabel} 기준으로
+            한 번에 확인합니다.
+          </p>
+          <p className="mt-2 text-xs font-semibold tracking-[0.02em] text-text-muted">
+            집계 범위: {dashboard.rangeLabel}
+          </p>
         </div>
+
+        <AdminPeriodTabs selectedPeriod={period} basePath="/admin" />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {stats.map((stat) => (
-          <AdminStatCard
-            key={stat.label}
-            label={stat.label}
-            value={numberFormatter.format(stat.value)}
-            help={stat.help}
-            tooltip={stat.tooltip}
-          />
-        ))}
-      </div>
-
-      <AdminLineChart items={dashboard.dailyPageViews} />
-      <AdminDailyMetricsTable
-        items={selectedDays === 30 ? dashboard.dailyMetrics30 : dashboard.dailyMetrics7}
-        selectedDays={selectedDays}
-      />
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <AdminSummaryList
-          title="오늘 유입 source TOP"
-          description="오늘 세션 기준으로 어떤 출처에서 가장 많이 들어왔는지 보여줍니다."
-          items={dashboard.topSources}
-          emptyTitle="아직 오늘 유입 source 데이터가 없어요."
-          emptyDescription="session_start가 쌓이면 출처별 요약이 여기에 보입니다."
-          valueLabel="오늘"
+      <div className="grid gap-4 xl:grid-cols-4">
+        <AdminStatCard
+          label="총 유입 세션"
+          value={numberFormatter.format(dashboard.totalSessions)}
+          help={`${dashboard.periodLabel} 동안 KNS 매거진에 입장한 세션 수입니다.`}
+          tooltip="session_start 또는 첫 page_view 기준으로 중복을 제거한 값입니다."
         />
-        <AdminSummaryList
-          title="오늘 유입 medium TOP"
-          description="organic, referral, none 같은 유입 방식 요약입니다."
-          items={dashboard.topMediums}
-          emptyTitle="아직 오늘 유입 medium 데이터가 없어요."
-          emptyDescription="세션이 쌓이면 어떤 방식으로 들어왔는지 볼 수 있습니다."
-          valueLabel="오늘"
+        <AdminStatCard
+          label="콘텐츠 상세 진입"
+          value={numberFormatter.format(dashboard.contentViews)}
+          help="콘텐츠 상세 페이지를 실제로 열어 본 횟수입니다."
+        />
+        <AdminStatCard
+          label="외부 원문 이동"
+          value={numberFormatter.format(dashboard.contentClicks)}
+          help="콘텐츠에서 카페·블로그·유튜브 등 원문으로 넘어간 횟수입니다."
+        />
+        <AdminStatCard
+          label="상담 클릭"
+          value={numberFormatter.format(dashboard.consultClicks)}
+          help="문맥별 상담 CTA를 눌러 전화 연결을 시도한 횟수입니다."
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <AdminSummaryList
-          title="오늘 campaign TOP"
-          description="UTM campaign 기준으로 어떤 캠페인 이름이 많이 들어왔는지 보여줍니다."
-          items={dashboard.topCampaigns}
-          emptyTitle="오늘 campaign 데이터가 아직 없어요."
-          emptyDescription="UTM이 붙은 외부 유입이 들어오면 캠페인 이름이 집계됩니다."
-          valueLabel="오늘"
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.9fr)]">
+        <AdminTrendChart
+          title={`${dashboard.periodLabel} 날짜별 흐름`}
+          description="유입 세션, 상세조회, 원문 이동, 상담 클릭을 날짜 단위로 비교합니다."
+          items={dashboard.trendPoints}
         />
-        <AdminSummaryList
-          title="오늘 랜딩 페이지 TOP"
-          description="방문 세션이 처음 들어온 페이지 기준입니다. 어떤 페이지가 입구 역할을 했는지 볼 수 있습니다."
-          items={dashboard.topLandingPages}
-          emptyTitle="오늘 랜딩 페이지 데이터가 아직 없어요."
-          emptyDescription="session_start가 쌓이면 방문 입구 페이지가 여기에 보입니다."
-          valueLabel="오늘"
+        <AdminAlertList items={dashboard.alerts} />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <AdminInsightList
+          title="유입 경로"
+          description="어느 채널과 방식으로 학부모가 가장 많이 들어오는지 보여줍니다."
+          items={dashboard.sourceMediumBreakdown}
+          emptyTitle="아직 유입 경로 데이터가 없습니다."
+          emptyDescription="QR, 블로그, 카페, 검색 유입이 쌓이면 여기부터 읽을 수 있습니다."
+          valueSuffix="세션"
+        />
+        <AdminInsightList
+          title="QR·UTM 캠페인"
+          description="설명회 QR, 외부 링크, 채널별 캠페인 반응을 비교합니다."
+          items={dashboard.utmCampaignBreakdown}
+          emptyTitle="캠페인 태깅 데이터가 없습니다."
+          emptyDescription="UTM이 붙은 유입이 생기면 캠페인별 반응이 표시됩니다."
+          valueSuffix="세션"
+        />
+        <AdminInsightList
+          title="첫 랜딩 페이지"
+          description="학부모가 어떤 진입 페이지에서 매거진 여정을 시작했는지 확인합니다."
+          items={dashboard.landingPageBreakdown}
+          emptyTitle="랜딩 페이지 데이터가 없습니다."
+          emptyDescription="session_start와 page_view가 쌓이면 진입 페이지 흐름이 보입니다."
+          valueSuffix="세션"
         />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <AdminSummaryList
-          title="최근 7일 많이 본 콘텐츠 TOP"
-          description="최근 7일 content_view 기준입니다. 오래된 누적 조회보다 지금 반응하는 콘텐츠를 먼저 봅니다."
-          items={dashboard.topContents}
-          emptyTitle="최근 7일 많이 본 콘텐츠가 아직 없어요."
-          emptyDescription="최근 7일 content_view가 쌓이면 반응이 높은 콘텐츠를 바로 볼 수 있습니다."
-          valueLabel="최근 7일"
+        <AdminInsightList
+          title="학년 관심도"
+          description="학년 선택, 콘텐츠 상세 진입, 원문 이동에서 읽힌 학년 반응입니다."
+          items={dashboard.gradeBreakdown}
+          emptyTitle="학년 관심도 데이터가 없습니다."
+          emptyDescription="학부모의 탐색이 늘어나면 어느 학년이 먼저 반응하는지 보입니다."
+          valueSuffix="회"
         />
-        <AdminSummaryList
-          title="최근 7일 클릭 많은 CTA TOP"
-          description="최근 7일 CTA 클릭 기준입니다. 오늘 편차보다 한 주 흐름을 더 안정적으로 보여줍니다."
-          items={dashboard.topCtas}
-          emptyTitle="최근 7일 CTA 클릭이 아직 없어요."
-          emptyDescription="최근 7일 CTA 클릭이 생기면 어떤 문구가 반응을 얻는지 볼 수 있습니다."
-          valueLabel="최근 7일"
+        <AdminInsightList
+          title="주제 관심도"
+          description="내신, 수능, 특목고, 학습법 등 어떤 주제가 더 반응하는지 보여줍니다."
+          items={dashboard.topicBreakdown}
+          emptyTitle="주제 관심도 데이터가 없습니다."
+          emptyDescription="콘텐츠 상세 진입과 원문 이동이 쌓이면 주제별 반응이 보입니다."
+          valueSuffix="회"
         />
-        <AdminSummaryList
-          title="최근 7일 클릭 많은 배너 TOP"
-          description="최근 7일 배너 클릭 기준입니다. 단기 변동보다 실제 운영 반응을 보기 쉽게 정리했습니다."
-          items={dashboard.topBanners}
-          emptyTitle="최근 7일 배너 클릭이 아직 없어요."
-          emptyDescription="최근 7일 배너 클릭이 쌓이면 어떤 배너가 반응을 얻는지 여기에 보입니다."
-          valueLabel="최근 7일"
+        <AdminInsightList
+          title="상담 세그먼트"
+          description="초등, 중1, 고등관 중 어느 상담 연결이 먼저 반응하는지 확인합니다."
+          items={dashboard.consultSegmentBreakdown}
+          emptyTitle="상담 세그먼트 클릭이 없습니다."
+          emptyDescription="문맥별 상담 CTA가 눌리면 여기에서 세그먼트별 반응을 볼 수 있습니다."
+          valueSuffix="회"
         />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <div className="card-surface p-5">
-          <h2 className="text-lg font-semibold text-text-primary">최근 등록 콘텐츠</h2>
-          <p className="mt-2 text-sm text-text-secondary">
-            가장 최근에 등록하거나 수정한 콘텐츠를 빠르게 확인하는 영역입니다.
-          </p>
-          <div className="mt-4 space-y-3">
-            {dashboard.recentContents.length > 0 ? (
-              dashboard.recentContents.map((content) => (
-                <div key={content.id} className="rounded-2xl bg-ivory p-4">
-                  <p className="font-semibold text-text-primary">{content.title}</p>
-                  <p className="mt-1 text-sm text-text-secondary">
-                    {content.grade} · {content.topic} · {content.isPublished ? "공개" : "비공개"}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <EmptyState
-                title="아직 등록된 콘텐츠가 없어요."
-                description="콘텐츠를 등록하면 최근 등록 목록을 여기서 바로 확인할 수 있습니다."
-              />
-            )}
-          </div>
-        </div>
-
-        <div className="card-surface p-5">
-          <h2 className="text-lg font-semibold text-text-primary">숫자 해석 가이드</h2>
-          <div className="mt-4 space-y-3 text-sm leading-6 text-text-secondary">
-            <p>방문 세션은 현재 구조에서 브라우저 쿠키 기준 방문 수입니다. 정확한 사람 수와 완전히 같지는 않습니다.</p>
-            <p>페이지뷰는 페이지가 열릴 때마다 쌓이고, 콘텐츠 상세 조회는 상세 페이지 진입만 따로 셉니다.</p>
-            <p>유입 source, medium, campaign, 랜딩 페이지는 오늘 세션의 첫 진입 기준으로 요약합니다.</p>
-            <p>콘텐츠·CTA·배너 랭킹은 최근 7일 반응 기준으로 보여 주어 하루치 편차와 누적 고착을 함께 줄였습니다.</p>
-            <p>운영 문서는 <span className="font-semibold text-text-primary">docs/utm-operation-guide.md</span>에 정리해 두었습니다.</p>
-          </div>
-        </div>
+        <AdminSummaryList
+          title="콘텐츠 상세 조회 Top 10"
+          description="가장 많이 읽힌 콘텐츠와 그 뒤에 이어진 원문 이동·상담 반응을 함께 확인합니다."
+          items={dashboard.topContentViews.map((item) => ({
+            label: item.title,
+            value: item.views,
+            href: item.href,
+            meta: `원문 이동 ${item.outboundClicks}회 · 상담 클릭 ${item.consultClicks}회`,
+          }))}
+          emptyTitle="상세 조회 데이터가 없습니다."
+          emptyDescription="콘텐츠 상세 진입이 생기면 우선순위를 여기서 바로 볼 수 있습니다."
+          valueLabel="조회"
+        />
+        <AdminSummaryList
+          title="원문 이동률이 높은 콘텐츠"
+          description="단순 조회수보다, 읽은 뒤 실제 원문으로 더 이어지는 콘텐츠를 모았습니다."
+          items={dashboard.topContentOutboundRates.map((item) => ({
+            label: item.title,
+            value: item.outboundClicks,
+            href: item.href,
+            meta: `원문 이동률 ${formatRate(item.rate)} · 상세조회 ${item.views}회`,
+          }))}
+          emptyTitle="원문 이동률 데이터가 없습니다."
+          emptyDescription="상세조회와 원문 이동이 함께 쌓이면 전환력이 높은 콘텐츠가 보입니다."
+          valueLabel="원문"
+        />
       </div>
 
-      <div className="card-surface p-5">
-        <h2 className="text-lg font-semibold text-text-primary">운영 알림</h2>
-        <div className="mt-4 space-y-3">
-          {dashboard.alerts.map((alert) => (
-            <div key={alert} className="rounded-2xl bg-ivory p-4 text-sm font-medium text-text-primary">
-              {alert}
-            </div>
-          ))}
+      <div className="grid gap-6 xl:grid-cols-3">
+        <AdminInsightList
+          title="CTA 클릭 순위"
+          description="설명회, 상담, 진단 중 어떤 CTA가 더 많이 눌리는지 확인합니다."
+          items={dashboard.ctaBreakdown}
+          emptyTitle="CTA 클릭 데이터가 없습니다."
+          emptyDescription="헤더, 소프트 CTA, 상세 CTA에서 발생한 반응이 여기에 모입니다."
+          valueSuffix="회"
+        />
+        <AdminInsightList
+          title="배너 클릭 순위"
+          description="운영 중인 배너 중 어떤 안내가 더 주목받는지 보여줍니다."
+          items={dashboard.bannerBreakdown}
+          emptyTitle="배너 클릭 데이터가 없습니다."
+          emptyDescription="배너를 누른 반응이 생기면 어떤 안내가 강한지 비교할 수 있습니다."
+          valueSuffix="회"
+        />
+        <AdminInsightList
+          title="배치 위치 반응"
+          description="헤더, 하단 CTA, 상세 페이지, 배너 중 어디서 클릭이 더 잘 일어나는지 보여줍니다."
+          items={dashboard.placementBreakdown}
+          emptyTitle="배치 위치 데이터가 없습니다."
+          emptyDescription="외부 이동 이벤트가 쌓이면 위치별 반응을 비교할 수 있습니다."
+          valueSuffix="회"
+        />
+      </div>
+
+      <div className="rounded-[28px] border border-black/6 bg-[linear-gradient(180deg,rgba(244,247,251,0.95),rgba(237,241,247,0.94))] px-5 py-5">
+        <p className="text-sm font-semibold tracking-[0.03em] text-text-secondary">운영 메모</p>
+        <div className="mt-3 grid gap-3 lg:grid-cols-3">
+          <div className="rounded-[24px] bg-white px-4 py-4">
+            <p className="text-xs font-semibold text-text-secondary">공개 콘텐츠</p>
+            <p className="mt-2 text-2xl font-bold tracking-[-0.03em] text-text-primary">
+              {numberFormatter.format(dashboard.totalPublished)}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">
+              현재 학부모가 볼 수 있는 공개 콘텐츠 수입니다.
+            </p>
+          </div>
+          <div className="rounded-[24px] bg-white px-4 py-4">
+            <p className="text-xs font-semibold text-text-secondary">현재 히어로</p>
+            <p className="mt-2 text-lg font-semibold tracking-[-0.02em] text-text-primary">
+              {dashboard.heroTitle ?? "미지정"}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">
+              홈 첫 화면에서 가장 먼저 학부모를 맞이하는 커버 스토리입니다.
+            </p>
+          </div>
+          <div className="rounded-[24px] bg-white px-4 py-4">
+            <p className="text-xs font-semibold text-text-secondary">이번 기간 핵심 판단</p>
+            <p className="mt-2 text-sm leading-7 text-text-primary">
+              유입이 충분한데 원문 이동이 약하면 콘텐츠 연결 문구를 손보고, 상담 클릭이
+              약하면 CTA 위치와 상담 세그먼트를 함께 점검해 주세요.
+            </p>
+          </div>
         </div>
       </div>
     </div>

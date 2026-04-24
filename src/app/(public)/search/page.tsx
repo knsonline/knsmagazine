@@ -3,9 +3,10 @@ import Link from "next/link";
 import { EventLogger } from "@/components/analytics/EventLogger";
 import { ContentListCard } from "@/components/cards/ContentListCard";
 import { SoftCtaSection } from "@/components/sections/SoftCtaSection";
-import { Badge } from "@/components/ui/Badge";
+import { Badge, getGradeBadgeClassName, getTopicBadgeClassName } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { SITE_COPY } from "@/constants/site";
 import { PRIMARY_GRADES, TOPICS } from "@/constants/taxonomy";
 import { getPrimaryConsultCta, getTrendingContents, searchContents } from "@/lib/data/content";
 import type { Grade, Topic } from "@/types/content";
@@ -39,9 +40,51 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <section className="section-space bg-white">
         <div className="shell">
           <SectionHeader
-            title="콘텐츠 검색"
-            description="제목이나 요약으로 검색하거나, 주제 태그를 눌러 필요한 흐름을 바로 찾아보세요."
+            title={SITE_COPY.searchTitle}
+            description={SITE_COPY.searchDescription}
           />
+
+          <div className="mb-6 rounded-[28px] border border-black/6 bg-[linear-gradient(180deg,rgba(248,245,241,0.92),rgba(255,255,255,0.98))] px-5 py-5 sm:px-6">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold tracking-[0.03em] text-text-secondary">
+                {SITE_COPY.searchTopicTitle}
+              </p>
+              <p className="text-sm leading-[1.72] text-text-secondary">
+                {SITE_COPY.searchTopicDescription}
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {PRIMARY_GRADES.map((gradeItem) => (
+                <Link
+                  key={gradeItem}
+                  href={`/search?grade=${encodeURIComponent(gradeItem)}`}
+                  className="rounded-full"
+                >
+                  <Badge
+                    tone={grade === gradeItem ? "gold" : "navy"}
+                    className={grade === gradeItem ? undefined : getGradeBadgeClassName(gradeItem)}
+                  >
+                    {gradeItem}
+                  </Badge>
+                </Link>
+              ))}
+              {TOPICS.map((topicItem) => (
+                <Link
+                  key={topicItem}
+                  href={`/search?topic=${encodeURIComponent(topicItem)}`}
+                  className="rounded-full"
+                >
+                  <Badge
+                    tone={topic === topicItem ? "gold" : "muted"}
+                    className={topic === topicItem ? undefined : getTopicBadgeClassName(topicItem)}
+                  >
+                    {topicItem}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          </div>
 
           <form className="card-surface mb-8 grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:p-6">
             <input
@@ -59,27 +102,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </button>
           </form>
 
-          <div className="mb-6 flex flex-wrap gap-2">
-            {PRIMARY_GRADES.map((gradeItem) => (
-              <Link
-                key={gradeItem}
-                href={`/search?grade=${encodeURIComponent(gradeItem)}`}
-                className="rounded-full"
-              >
-                <Badge tone={grade === gradeItem ? "gold" : "navy"}>{gradeItem}</Badge>
-              </Link>
-            ))}
-            {TOPICS.map((topicItem) => (
-              <Link
-                key={topicItem}
-                href={`/search?topic=${encodeURIComponent(topicItem)}`}
-                className="rounded-full"
-              >
-                <Badge tone={topic === topicItem ? "gold" : "muted"}>{topicItem}</Badge>
-              </Link>
-            ))}
-          </div>
-
           {items.length > 0 ? (
             <div className="space-y-4">
               {items.map((content) => (
@@ -93,7 +115,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             />
           ) : (
             <div className="space-y-4">
-              <p className="text-sm font-semibold text-text-secondary">이런 콘텐츠부터 많이 찾으셨어요.</p>
+              <p className="text-sm font-semibold text-text-secondary">{SITE_COPY.searchFallbackTitle}</p>
               {fallback.map((content) => (
                 <ContentListCard key={content.id} content={content} />
               ))}
@@ -101,7 +123,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           )}
         </div>
       </section>
-      <SoftCtaSection cta={consultCta} pagePath="/search" />
+      <SoftCtaSection cta={consultCta} pagePath="/search" placement="search_soft_cta" />
     </>
   );
 }

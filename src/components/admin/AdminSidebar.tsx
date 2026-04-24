@@ -4,8 +4,8 @@ import { logoutAction } from "@/app/admin/actions";
 const navigationItems = [
   { href: "/admin", label: "대시보드" },
   { href: "/admin/contents", label: "콘텐츠 관리" },
-  { href: "/admin/ctas", label: "CTA 관리" },
   { href: "/admin/banners", label: "배너 관리" },
+  { href: "/admin/ctas", label: "CTA 관리" },
   { href: "/admin/collections", label: "컬렉션 관리" },
 ] as const;
 
@@ -15,7 +15,7 @@ export function AdminSidebar() {
       <div className="flex h-full flex-col">
         <div>
           <p className="text-2xl font-bold tracking-[-0.03em]">KNS 매거진</p>
-          <p className="mt-2 text-sm text-white/70">깔끔한 큐레이션 도구</p>
+          <p className="mt-2 text-sm text-white/70">관제 센터</p>
         </div>
 
         <nav className="mt-10 space-y-2">

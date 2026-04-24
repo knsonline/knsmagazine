@@ -1,4 +1,4 @@
-import type { ContentType, Grade, Topic } from "@/types/content";
+import type { Grade, Topic } from "@/types/content";
 
 export type AnalyticsEventType =
   | "session_start"
@@ -11,30 +11,56 @@ export type AnalyticsEventType =
   | "grade_select"
   | "collection_view";
 
-export interface AnalyticsEventPayload {
+export type DestinationChannel =
+  | "naver_blog"
+  | "naver_cafe"
+  | "youtube"
+  | "google_form"
+  | "phone"
+  | "other";
+
+export interface AnalyticEvent {
   eventType: AnalyticsEventType;
-  pagePath: string;
   contentId?: string;
+  contentSlug?: string;
   ctaId?: string;
+  ctaLabel?: string;
   bannerId?: string;
   collectionId?: string;
-  collectionName?: string;
   grade?: Grade;
   topic?: Topic;
-  contentType?: ContentType;
+  pagePath?: string;
+  referrer?: string;
+  outboundUrl?: string;
   externalUrl?: string;
-  ctaLabel?: string;
-  contentSlug?: string;
   placement?: string;
-}
-
-export interface AnalyticsEventRecord extends AnalyticsEventPayload {
-  sessionId: string;
-  referrer: string;
+  pageType?: string;
+  sessionId?: string;
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
   utmContent?: string;
-  deviceType: "mobile" | "desktop";
-  timestamp: string;
+  landingPath?: string;
+  destinationChannel?: DestinationChannel;
+}
+
+export interface ClientEventPayload {
+  eventType: AnalyticsEventType;
+  session_id?: string;
+  content_id?: string;
+  cta_id?: string;
+  banner_id?: string;
+  collection_id?: string;
+  grade?: string;
+  topic?: string;
+  page_path?: string;
+  referrer?: string;
+  device_type?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  placement?: string;
+  destination_channel?: DestinationChannel;
+  landing_path?: string;
 }

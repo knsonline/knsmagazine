@@ -1,16 +1,21 @@
 "use client";
 
-import { classifyReferrer, type AnalyticsAttributionSnapshot } from "@/lib/analytics/attribution";
-import type { AnalyticsEventPayload, AnalyticsEventRecord } from "@/types/analytics";
-
-const SESSION_COOKIE = "kns_session_id";
-const SESSION_STARTED_COOKIE = "kns_session_started";
-const ANALYTICS_OPTOUT_COOKIE = "kns_analytics_disabled";
-const ATTRIBUTION_LAST_COOKIE = "kns_last_touch";
-const ATTRIBUTION_FIRST_COOKIE = "kns_first_touch";
-const SESSION_MAX_AGE = 60 * 30;
-const ANALYTICS_OPTOUT_MAX_AGE = 60 * 60 * 24 * 30;
-const ATTRIBUTION_MAX_AGE = 60 * 60 * 24 * 30;
+import {
+  ANALYTICS_OPTOUT_COOKIE,
+  ANALYTICS_OPTOUT_MAX_AGE,
+  ATTRIBUTION_FIRST_COOKIE,
+  ATTRIBUTION_LAST_COOKIE,
+  ATTRIBUTION_MAX_AGE,
+  SESSION_COOKIE,
+  SESSION_MAX_AGE,
+  SESSION_STARTED_COOKIE,
+} from "@/lib/analytics/constants";
+import {
+  classifyReferrer,
+  detectDestinationChannel,
+  type AnalyticsAttributionSnapshot,
+} from "@/lib/analytics/attribution";
+import type { AnalyticEvent, ClientEventPayload } from "@/types/analytics";
 
 function readCookie(name: string): string | undefined {
   if (typeof document === "undefined") {
@@ -102,7 +107,10 @@ function markSessionStarted(sessionId: string): void {
   writeCookie(SESSION_STARTED_COOKIE, sessionId);
 }
 
-function resolveAttribution(): AnalyticsAttributionSnapshot {
+function resolveAttribution(): {
+  current: AnalyticsAttributionSnapshot;
+  first: AnalyticsAttributionSnapshot;
+} {
   const searchParams = new URLSearchParams(window.location.search);
   const lastTouch = readAttributionCookie(ATTRIBUTION_LAST_COOKIE);
   const firstTouch = readAttributionCookie(ATTRIBUTION_FIRST_COOKIE);
@@ -142,30 +150,48 @@ function resolveAttribution(): AnalyticsAttributionSnapshot {
     writeAttributionCookie(ATTRIBUTION_LAST_COOKIE, resolvedAttribution);
   }
 
+  const firstAttribution = firstTouch ?? resolvedAttribution;
+
   if (!firstTouch) {
-    writeAttributionCookie(ATTRIBUTION_FIRST_COOKIE, resolvedAttribution);
+    writeAttributionCookie(ATTRIBUTION_FIRST_COOKIE, firstAttribution);
   }
 
-  return shouldUpdateLastTouch ? resolvedAttribution : lastTouch ?? resolvedAttribution;
-}
-
-function buildEventRecord(payload: AnalyticsEventPayload, sessionId: string): AnalyticsEventRecord {
-  const attribution = resolveAttribution();
-
   return {
-    ...payload,
-    sessionId,
-    referrer: document.referrer,
-    utmSource: attribution.source,
-    utmMedium: attribution.medium,
-    utmCampaign: attribution.campaign,
-    utmContent: attribution.content,
-    deviceType: getDeviceType(),
-    timestamp: new Date().toISOString(),
+    current: shouldUpdateLastTouch ? resolvedAttribution : lastTouch ?? resolvedAttribution,
+    first: firstAttribution,
   };
 }
 
-function sendWithFetch(record: AnalyticsEventRecord) {
+function buildEventRecord(payload: AnalyticEvent, sessionId: string): ClientEventPayload {
+  const attribution = resolveAttribution();
+  const pagePath = payload.pagePath ?? getCurrentPagePath();
+  const outboundUrl = payload.outboundUrl ?? payload.externalUrl;
+  const destinationChannel =
+    payload.destinationChannel ?? detectDestinationChannel(outboundUrl);
+
+  return {
+    eventType: payload.eventType,
+    session_id: sessionId,
+    content_id: payload.contentId,
+    cta_id: payload.ctaId,
+    banner_id: payload.bannerId,
+    collection_id: payload.collectionId,
+    grade: payload.grade,
+    topic: payload.topic,
+    page_path: pagePath,
+    referrer: attribution.current.referrer ?? document.referrer,
+    device_type: getDeviceType(),
+    utm_source: payload.utmSource ?? attribution.current.source,
+    utm_medium: payload.utmMedium ?? attribution.current.medium,
+    utm_campaign: payload.utmCampaign ?? attribution.current.campaign,
+    utm_content: payload.utmContent ?? attribution.current.content,
+    placement: payload.placement,
+    destination_channel: destinationChannel,
+    landing_path: payload.landingPath ?? attribution.first.landingPath ?? pagePath,
+  };
+}
+
+function sendWithFetch(record: ClientEventPayload) {
   void fetch("/api/events", {
     method: "POST",
     headers: {
@@ -176,7 +202,7 @@ function sendWithFetch(record: AnalyticsEventRecord) {
   });
 }
 
-function dispatchRecord(record: AnalyticsEventRecord): void {
+function dispatchRecord(record: ClientEventPayload): void {
   if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
     const blob = new Blob([JSON.stringify(record)], { type: "application/json" });
     const success = navigator.sendBeacon("/api/events", blob);
@@ -199,7 +225,7 @@ export function enableAnalyticsForThisBrowser(): void {
   removeCookie(ANALYTICS_OPTOUT_COOKIE);
 }
 
-export function trackEvent(payload: AnalyticsEventPayload): void {
+export function trackEvent(payload: AnalyticEvent): void {
   if (isAnalyticsDisabled()) {
     return;
   }

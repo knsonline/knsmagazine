@@ -1,4 +1,7 @@
-import type { AnalyticsEventType } from "@/types/analytics";
+import type {
+  AnalyticsEventType,
+  DestinationChannel,
+} from "@/types/analytics";
 
 export interface AnalyticsAttributionSnapshot {
   source: string;
@@ -29,7 +32,11 @@ export function sanitizeTrackingToken(value: string): string {
 export function sanitizeTrackingPath(pagePath: string): string {
   try {
     const parsed = new URL(pagePath, "https://kns.local");
-    const joinedPath = parsed.pathname.split("/").filter(Boolean).map(normalizeToken).join("_");
+    const joinedPath = parsed.pathname
+      .split("/")
+      .filter(Boolean)
+      .map(normalizeToken)
+      .join("_");
     return joinedPath || "home";
   } catch {
     return normalizeToken(pagePath);
@@ -57,6 +64,14 @@ export function classifyReferrer(
       return { source: "google", medium: "organic" };
     }
 
+    if (host.includes("blog.naver.com")) {
+      return { source: "naver_blog", medium: "referral" };
+    }
+
+    if (host.includes("cafe.naver.com")) {
+      return { source: "naver_cafe", medium: "referral" };
+    }
+
     if (host.includes("naver.com")) {
       return { source: "naver", medium: "organic" };
     }
@@ -71,17 +86,46 @@ export function classifyReferrer(
   }
 }
 
-function getOutboundMedium(eventType: AnalyticsEventType): "content" | "cta" | "banner" | undefined {
-  switch (eventType) {
-    case "content_click":
-      return "content";
-    case "cta_click":
-      return "cta";
-    case "banner_click":
-      return "banner";
-    default:
-      return undefined;
+export function detectDestinationChannel(rawUrl?: string): DestinationChannel | undefined {
+  if (!rawUrl || rawUrl === "#") {
+    return undefined;
   }
+
+  if (rawUrl.startsWith("tel:")) {
+    return "phone";
+  }
+
+  let parsed: URL;
+
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return "other";
+  }
+
+  const host = parsed.hostname.toLowerCase();
+
+  if (host.includes("blog.naver.com")) {
+    return "naver_blog";
+  }
+
+  if (host.includes("cafe.naver.com")) {
+    return "naver_cafe";
+  }
+
+  if (host.includes("youtube.com") || host.includes("youtu.be")) {
+    return "youtube";
+  }
+
+  if (
+    host.includes("forms.gle") ||
+    host.includes("docs.google.com") ||
+    parsed.pathname.includes("/forms/")
+  ) {
+    return "google_form";
+  }
+
+  return "other";
 }
 
 interface BuildOutboundTrackedUrlOptions {
@@ -103,9 +147,7 @@ export function buildOutboundTrackedUrl({
     return rawUrl;
   }
 
-  const medium = getOutboundMedium(eventType);
-
-  if (!medium) {
+  if (!["content_click", "cta_click", "banner_click"].includes(eventType)) {
     return rawUrl;
   }
 
@@ -121,6 +163,12 @@ export function buildOutboundTrackedUrl({
     return rawUrl;
   }
 
+  const medium =
+    eventType === "content_click"
+      ? "content"
+      : eventType === "banner_click"
+        ? "banner"
+        : "cta";
   const campaignBase = sanitizeTrackingPath(pagePath);
   const placementToken = placement ? sanitizeTrackingToken(placement) : undefined;
   const contentToken = contentSlug ? sanitizeTrackingToken(contentSlug) : undefined;

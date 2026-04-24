@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { MobileNav } from "@/components/layout/MobileNav";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { TopPromoBanner } from "@/components/layout/TopPromoBanner";
@@ -15,8 +17,11 @@ export default async function PublicLayout({
     <>
       <TopPromoBanner banner={topBanner} />
       <SiteHeader consultCta={consultCta} />
-      <main className="min-h-[calc(100vh-200px)]">{children}</main>
+      <main className="min-h-[calc(100vh-200px)] pb-16 md:pb-0">{children}</main>
       <SiteFooter consultCta={consultCta} />
+      <Suspense fallback={null}>
+        <MobileNav />
+      </Suspense>
     </>
   );
 }

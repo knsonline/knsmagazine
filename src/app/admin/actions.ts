@@ -23,6 +23,11 @@ function parseMultilineText(value: FormDataEntryValue | null) {
   return toNullableMultilineText(typeof value === "string" ? value : "");
 }
 
+function parseOptionalText(value: FormDataEntryValue | null) {
+  const parsed = parseText(value);
+  return parsed || null;
+}
+
 async function removeStorageObjectIfExists(bucket: string, path: string | null) {
   if (!path) {
     return;
@@ -45,6 +50,10 @@ function revalidateMagazine() {
   revalidatePath("/contents");
   revalidatePath("/search");
   revalidatePath("/grades/[grade]", "page");
+}
+
+function revalidateAdminIntelligence() {
+  revalidatePath("/admin");
 }
 
 function revalidateContentRoutes(id: string) {
@@ -162,7 +171,7 @@ export async function createContentAction(formData: FormData) {
 
   revalidateMagazine();
   revalidateContentRoutes(createdContentId);
-  revalidatePath("/admin");
+  revalidateAdminIntelligence();
   revalidateAdminContentRoutes(createdContentId);
   redirect(`/admin/contents/${createdContentId}/edit`);
 }
@@ -221,7 +230,7 @@ export async function updateContentAction(id: string, formData: FormData) {
 
   revalidateMagazine();
   revalidateContentRoutes(id);
-  revalidatePath("/admin");
+  revalidateAdminIntelligence();
   revalidateAdminContentRoutes(id);
   redirect(`/admin/contents/${id}/edit`);
 }
@@ -234,15 +243,27 @@ export async function deleteContentAction(id: string) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const { data: contentRow, error: fetchError } = await supabase
+    .from("contents")
+    .select("thumbnail_url")
+    .eq("id", id)
+    .single();
+
+  if (fetchError) {
+    throw new Error(fetchError.message);
+  }
+
   const { error } = await supabase.from("contents").delete().eq("id", id);
 
   if (error) {
     throw new Error(error.message);
   }
 
+  await removeThumbnailIfUnused(extractThumbnailStoragePath(contentRow?.thumbnail_url ?? null), id);
+
   revalidateMagazine();
   revalidateContentRoutes(id);
-  revalidatePath("/admin");
+  revalidateAdminIntelligence();
   revalidateAdminContentRoutes(id);
   redirect("/admin/contents");
 }
@@ -283,7 +304,7 @@ export async function duplicateContentAction(id: string) {
   }
 
   revalidateMagazine();
-  revalidatePath("/admin");
+  revalidateAdminIntelligence();
   revalidatePath("/admin/contents");
   revalidateAdminContentRoutes(data.id);
   redirect(`/admin/contents/${data.id}/edit?duplicated=1`);
@@ -294,16 +315,20 @@ export async function createCtaAction(formData: FormData) {
   if (!hasSupabaseEnv()) redirect("/admin/ctas");
 
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("ctas").insert({
+  const kind = parseText(formData.get("kind")) === "consult" ? "consult" : "external";
+  const payload = {
     label: parseText(formData.get("label")),
     url: parseText(formData.get("url")),
-  });
+    kind,
+    consult_segment: kind === "consult" ? parseOptionalText(formData.get("consult_segment")) : null,
+  };
+
+  const { error } = await supabase.from("ctas").insert(payload);
 
   if (error) throw new Error(error.message);
 
   revalidateMagazine();
-  revalidatePath("/admin/ctas");
-  revalidatePath("/admin/contents");
+  revalidateAdminIntelligence();
   redirect("/admin/ctas");
 }
 
@@ -312,19 +337,20 @@ export async function updateCtaAction(id: string, formData: FormData) {
   if (!hasSupabaseEnv()) redirect("/admin/ctas");
 
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
-    .from("ctas")
-    .update({
-      label: parseText(formData.get("label")),
-      url: parseText(formData.get("url")),
-    })
-    .eq("id", id);
+  const kind = parseText(formData.get("kind")) === "consult" ? "consult" : "external";
+  const payload = {
+    label: parseText(formData.get("label")),
+    url: parseText(formData.get("url")),
+    kind,
+    consult_segment: kind === "consult" ? parseOptionalText(formData.get("consult_segment")) : null,
+  };
+
+  const { error } = await supabase.from("ctas").update(payload).eq("id", id);
 
   if (error) throw new Error(error.message);
 
   revalidateMagazine();
-  revalidatePath("/admin/ctas");
-  revalidatePath("/admin/contents");
+  revalidateAdminIntelligence();
   redirect("/admin/ctas");
 }
 
@@ -338,8 +364,7 @@ export async function deleteCtaAction(id: string) {
   if (error) throw new Error(error.message);
 
   revalidateMagazine();
-  revalidatePath("/admin");
-  revalidatePath("/admin/ctas");
+  revalidateAdminIntelligence();
   revalidatePath("/admin/contents");
   redirect("/admin/ctas");
 }
@@ -351,6 +376,7 @@ export async function createBannerAction(formData: FormData) {
   const supabase = createSupabaseAdminClient();
   const nextBannerPath = parseText(formData.get("banner_storage_path")) || null;
   const payload = {
+    title: parseText(formData.get("title")),
     image_url: parseText(formData.get("image_url")),
     link_url: parseText(formData.get("link_url")) || null,
     starts_at: parseText(formData.get("starts_at")) || null,
@@ -366,7 +392,7 @@ export async function createBannerAction(formData: FormData) {
   }
 
   revalidateMagazine();
-  revalidatePath("/admin");
+  revalidateAdminIntelligence();
   revalidatePath("/admin/banners");
   redirect("/admin/banners");
 }
@@ -379,6 +405,7 @@ export async function updateBannerAction(id: string, formData: FormData) {
   const previousBannerPath = parseText(formData.get("previous_banner_storage_path")) || null;
   const nextBannerPath = parseText(formData.get("banner_storage_path")) || null;
   const payload = {
+    title: parseText(formData.get("title")),
     image_url: parseText(formData.get("image_url")),
     link_url: parseText(formData.get("link_url")) || null,
     starts_at: parseText(formData.get("starts_at")) || null,
@@ -401,7 +428,7 @@ export async function updateBannerAction(id: string, formData: FormData) {
   }
 
   revalidateMagazine();
-  revalidatePath("/admin");
+  revalidateAdminIntelligence();
   revalidatePath("/admin/banners");
   redirect("/admin/banners");
 }
@@ -428,7 +455,7 @@ export async function deleteBannerAction(id: string) {
   await removeBannerIfExists(extractBannerStoragePath(parseText(bannerRow?.image_url ?? null)));
 
   revalidateMagazine();
-  revalidatePath("/admin");
+  revalidateAdminIntelligence();
   revalidatePath("/admin/banners");
   redirect("/admin/banners");
 }
@@ -461,11 +488,15 @@ export async function createCollectionAction(formData: FormData) {
       })),
     );
 
-    if (itemsError) throw new Error(itemsError.message);
+    if (itemsError) {
+      await supabase.from("collections").delete().eq("id", data.id);
+      throw new Error(itemsError.message);
+    }
   }
 
   revalidateMagazine();
   revalidateCollectionRoutes(data.id);
+  revalidateAdminIntelligence();
   revalidatePath("/admin/collections");
   redirect("/admin/collections");
 }
@@ -486,23 +517,53 @@ export async function updateCollectionAction(id: string, formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  const contentIds = formData.getAll("content_ids").map((value) => String(value));
-  await supabase.from("collection_items").delete().eq("collection_id", id);
+  const contentIds = [...new Set(formData.getAll("content_ids").map((value) => String(value)))];
+  const { data: existingItems, error: existingItemsError } = await supabase
+    .from("collection_items")
+    .select("content_id")
+    .eq("collection_id", id);
+
+  if (existingItemsError) throw new Error(existingItemsError.message);
 
   if (contentIds.length > 0) {
-    const { error: itemsError } = await supabase.from("collection_items").insert(
+    const { error: itemsError } = await supabase.from("collection_items").upsert(
       contentIds.map((contentId, index) => ({
         collection_id: id,
         content_id: contentId,
         sort_order: index,
       })),
+      {
+        onConflict: "collection_id,content_id",
+      },
     );
 
     if (itemsError) throw new Error(itemsError.message);
   }
 
+  const removableContentIds = (existingItems ?? [])
+    .map((item) => item.content_id)
+    .filter((contentId) => !contentIds.includes(contentId));
+
+  if (contentIds.length === 0) {
+    const { error: deleteItemsError } = await supabase
+      .from("collection_items")
+      .delete()
+      .eq("collection_id", id);
+
+    if (deleteItemsError) throw new Error(deleteItemsError.message);
+  } else if (removableContentIds.length > 0) {
+    const { error: deleteItemsError } = await supabase
+      .from("collection_items")
+      .delete()
+      .eq("collection_id", id)
+      .in("content_id", removableContentIds);
+
+    if (deleteItemsError) throw new Error(deleteItemsError.message);
+  }
+
   revalidateMagazine();
   revalidateCollectionRoutes(id);
+  revalidateAdminIntelligence();
   revalidatePath("/admin/collections");
   redirect("/admin/collections");
 }
@@ -518,7 +579,7 @@ export async function deleteCollectionAction(id: string) {
 
   revalidateMagazine();
   revalidateCollectionRoutes(id);
-  revalidatePath("/admin");
+  revalidateAdminIntelligence();
   revalidatePath("/admin/collections");
   redirect("/admin/collections");
 }

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>KNS 매거진 · 모바일 하이파이 프로토타입</title>
+<meta name="viewport" content="width=1400">
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: "Pretendard", -apple-system, sans-serif; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="screens/tokens.jsx"></script>
+<script type="text/babel" src="screens/screen-home.jsx"></script>
+<script type="text/babel" src="screens/screen-grade.jsx"></script>
+<script type="text/babel" src="screens/screen-guide-index.jsx"></script>
+<script type="text/babel" src="screens/screen-guide-detail.jsx"></script>
+<script type="text/babel" src="screens/screen-article.jsx"></script>
+<script type="text/babel" src="screens/screen-more.jsx"></script>
+
+<script type="text/babel">
+const PHONE_W = 375;
+const PHONE_H = 812;
+
+function PhoneFrame({ children }) {
+  return (
+    <div style={{
+      width: PHONE_W, height: PHONE_H,
+      background: '#000', borderRadius: 44,
+      padding: 10, boxShadow: '0 30px 80px -40px rgba(0,0,0,0.3), 0 0 0 2px rgba(0,0,0,0.08)',
+      position: 'relative',
+    }}>
+      <div style={{
+        width: '100%', height: '100%', background: '#FAF8F5',
+        borderRadius: 34, overflow: 'hidden', position: 'relative',
+      }}>
+        {/* Dynamic Island */}
+        <div style={{
+          position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
+          width: 110, height: 32, background: '#000', borderRadius: 999, zIndex: 100,
+        }}/>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const SCREENS = [
+  { id: 'home',         label: '01 · 홈 (첫인상)',               C: () => <ScreenHome />,           note: 'QR로 들어온 학부모의 첫 화면. 학년 선택이 모든 것의 시작점.' },
+  { id: 'grade',        label: '02 · 학년별 허브 (중등)',         C: () => <ScreenGradeHub />,       note: '학년별 컬러 시스템 — 중등=민트. 가이드+매거진이 한 화면에.' },
+  { id: 'guide-index',  label: '03 · 입시가이드 인덱스',           C: () => <ScreenGuideIndex />,     note: '4대 기둥: 특목고 / 대학입시 / 학년별 로드맵 / 용어사전.' },
+  { id: 'guide-detail', label: '04 · 가이드 상세 (특목고)',        C: () => <ScreenGuideDetail />,    note: '목차 + 표 + Tip 콜아웃. 중간 깊이의 "가이드 수준" 콘텐츠.' },
+  { id: 'article',      label: '05 · 매거진 기사 상세',            C: () => <ScreenArticleDetail />,  note: '기사 상단에 "먼저 읽어보면 좋아요" — 가이드로 브리지.' },
+  { id: 'magazine',     label: '06 · 매거진 인덱스',              C: () => <ScreenMagazineIndex />,  note: '큐레이션 콘텐츠 전체 아카이브. 주제 필터.' },
+  { id: 'glossary',     label: '07 · 용어 사전',                 C: () => <ScreenGlossary />,       note: '86개 입시 용어를 카드 그리드로. 검색·카테고리.' },
+];
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="overview" title="KNS 매거진 · 모바일 하이파이" subtitle="7개 핵심 화면 · 학년별 컬러 시스템 · 하단 탭바 · 입시가이드/매거진 분리">
+        {SCREENS.map(s => (
+          <DCArtboard key={s.id} id={s.id} label={s.label} width={PHONE_W + 20} height={PHONE_H + 20} note={s.note}>
+            <PhoneFrame>
+              <s.C />
+            </PhoneFrame>
+          </DCArtboard>
+        ))}
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

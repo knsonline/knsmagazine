@@ -16,6 +16,7 @@ interface CollectionEditorFormProps {
     title: string;
     grade: string;
     topic: string;
+    trackName?: string | null;
   }>;
 }
 
@@ -39,7 +40,9 @@ export function CollectionEditorForm({
         return true;
       }
 
-      return `${option.title} ${option.grade} ${option.topic}`.toLowerCase().includes(normalized);
+      return `${option.title} ${option.grade} ${option.topic} ${option.trackName ?? ""}`
+        .toLowerCase()
+        .includes(normalized);
     });
   }, [contentOptions, query]);
 
@@ -92,6 +95,7 @@ export function CollectionEditorForm({
             <span>
               <span className="block font-semibold text-text-primary">{option.title}</span>
               <span className="mt-1 block text-xs text-text-secondary">
+                {option.trackName ? `${option.trackName} · ` : ""}
                 {option.grade} · {option.topic}
               </span>
             </span>

@@ -66,6 +66,23 @@ export function BannerEditorForm({ action, banner, footerAction }: BannerEditorF
         <div className="space-y-2 xl:col-span-3">
           <label
             className="text-sm font-semibold text-text-primary"
+            htmlFor={banner ? `title_${banner.id}` : "title_new"}
+          >
+            배너 제목
+          </label>
+          <input
+            id={banner ? `title_${banner.id}` : "title_new"}
+            name="title"
+            defaultValue={banner?.title}
+            required
+            placeholder="예: 4월 학부모 설명회 안내"
+            className="min-h-12 w-full rounded-2xl border border-black/10 bg-ivory px-4 outline-none"
+          />
+        </div>
+
+        <div className="space-y-2 xl:col-span-2">
+          <label
+            className="text-sm font-semibold text-text-primary"
             htmlFor={banner ? `link_url_${banner.id}` : "link_url_new"}
           >
             링크 URL

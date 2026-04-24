@@ -1,4 +1,9 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { TrackedExternalLink } from "@/components/analytics/TrackedExternalLink";
+import { resolveBannerDisplayCopy } from "@/lib/utils/banner-copy";
+import { protectPhraseSpacing } from "@/lib/utils/text";
 import type { BannerItem } from "@/types/content";
 
 interface TopPromoBannerProps {
@@ -6,13 +11,13 @@ interface TopPromoBannerProps {
 }
 
 export function TopPromoBanner({ banner }: TopPromoBannerProps) {
+  const pathname = usePathname();
+
   if (!banner) {
     return null;
   }
 
-  const displayTitle = banner.startsAt
-    ? `${new Date(banner.startsAt).getFullYear()} 설명회 일정 확인하기`
-    : "KNS 설명회 일정 확인하기";
+  const displayTitle = protectPhraseSpacing(resolveBannerDisplayCopy(banner).title);
 
   return (
     <div className="bg-[#111111] text-white">
@@ -21,7 +26,7 @@ export function TopPromoBanner({ banner }: TopPromoBannerProps) {
           href={banner.linkUrl}
           event={{
             eventType: "banner_click",
-            pagePath: "/",
+            pagePath: pathname || "/",
             bannerId: banner.id,
             placement: "top_promo_banner",
           }}

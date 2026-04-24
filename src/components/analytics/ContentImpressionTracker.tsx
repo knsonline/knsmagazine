@@ -3,13 +3,12 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/analytics/tracker";
-import type { ContentType, Grade, Topic } from "@/types/content";
+import type { Grade, Topic } from "@/types/content";
 
 interface ContentImpressionTrackerProps {
   contentId: string;
   grade: Grade;
   topic: Topic;
-  contentType: ContentType;
   className?: string;
 }
 
@@ -19,7 +18,6 @@ export function ContentImpressionTracker({
   contentId,
   grade,
   topic,
-  contentType,
   className = DEFAULT_CLASS_NAME,
 }: ContentImpressionTrackerProps) {
   const pathname = usePathname();
@@ -45,7 +43,6 @@ export function ContentImpressionTracker({
         contentId,
         grade,
         topic,
-        contentType,
       });
     };
 
@@ -71,7 +68,7 @@ export function ContentImpressionTracker({
     return () => {
       observer.disconnect();
     };
-  }, [contentId, contentType, grade, pathname, topic]);
+  }, [contentId, grade, pathname, topic]);
 
   return <span ref={targetRef} aria-hidden="true" className={className} />;
 }

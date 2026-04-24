@@ -111,7 +111,7 @@ select {
   }
 
   .card-surface {
-    @apply rounded-3xl border border-[rgba(27,42,74,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,251,255,0.98))] shadow-[0_18px_40px_-32px_rgba(27,42,74,0.24)];
+    @apply rounded-3xl border border-black/5 bg-white shadow-sm;
   }
 }
 

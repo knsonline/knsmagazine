@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics/tracker";
-import type { AnalyticsEventPayload } from "@/types/analytics";
+import type { AnalyticEvent } from "@/types/analytics";
 
 interface TrackedInternalLinkProps {
   href: string;
   className?: string;
-  event: AnalyticsEventPayload;
+  event: AnalyticEvent;
   children: React.ReactNode;
   onClick?: () => void;
 }
@@ -24,7 +24,10 @@ export function TrackedInternalLink({
       href={href}
       className={className}
       onClick={() => {
-        trackEvent(event);
+        trackEvent({
+          ...event,
+          pagePath: event.pagePath,
+        });
         onClick?.();
       }}
     >
